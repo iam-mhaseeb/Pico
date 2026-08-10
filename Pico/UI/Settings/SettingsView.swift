@@ -41,6 +41,16 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Pet gestures") {
+                LabeledContent("Pet", value: "Click")
+                LabeledContent("Feed", value: "Double-click")
+                LabeledContent("Shoo", value: "Right-click")
+                LabeledContent("Menu", value: "Press & hold")
+                Text("Gestures play short reactions without opening Ask Pico. Drag still repositions Pico.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Keyboard") {
                 LabeledContent("Ask Pico", value: "⌥ Space")
                 LabeledContent("Text Actions", value: "⌥ ⇧ Space")
@@ -70,7 +80,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 420, height: 480)
+        .frame(width: 420, height: 560)
         .confirmationDialog(
             "Delete all conversations?",
             isPresented: $confirmClear,

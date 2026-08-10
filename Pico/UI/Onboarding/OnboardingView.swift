@@ -8,6 +8,7 @@ struct OnboardingView: View {
         ("Meet", "Meet"),
         ("Ask", "Ask"),
         ("Text", "Text"),
+        ("Play", "Play"),
         ("Access", "Access"),
         ("Ready", "Ready")
     ]
@@ -21,8 +22,9 @@ struct OnboardingView: View {
                 case 0: meetPage
                 case 1: askPage
                 case 2: textPage
-                case 3: permissionsPage
-                case 4: readyPage
+                case 3: playPage
+                case 4: permissionsPage
+                case 5: readyPage
                 default: meetPage
                 }
             }
@@ -45,7 +47,7 @@ struct OnboardingView: View {
             }
         }
         .padding(28)
-        .frame(width: 420, height: 420)
+        .frame(width: 420, height: 460)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: PicoTheme.panelCornerRadius, style: .continuous))
     }
@@ -127,6 +129,24 @@ struct OnboardingView: View {
             Text("⌥ ⇧ Space")
                 .font(.largeTitle.monospaced())
         }
+    }
+
+    private var playPage: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Play with Pico")
+                .font(.title2.weight(.semibold))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Click — pet")
+                Text("Double-click — feed")
+                Text("Right-click — shoo")
+                Text("Press & hold — menu")
+            }
+            .font(.body.monospaced())
+            Text("Drag to move. Ask Pico stays on ⌥ Space.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var permissionsPage: some View {

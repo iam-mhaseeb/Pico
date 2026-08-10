@@ -223,7 +223,7 @@ final class AppCoordinator {
     func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 480),
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -306,6 +306,25 @@ final class AppCoordinator {
 
     func showPetSpeech(_ kind: PetSpeechKind) {
         petPanel.showSpeech(kind)
+    }
+
+    func handlePetGesture() {
+        guard !isPaused else { return }
+        setPetState(.love)
+        showPetSpeech(.pet)
+    }
+
+    func handleFeedGesture() {
+        guard !isPaused else { return }
+        setPetState(.celebrating)
+        showPetSpeech(.feed)
+    }
+
+    func handleShooGesture() {
+        guard !isPaused else { return }
+        setPetState(.sad)
+        showPetSpeech(.shoo)
+        petPanel.dashToRandomNearbySpot(animated: true)
     }
 
     private func updatePetVisibility() {

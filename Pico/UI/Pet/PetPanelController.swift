@@ -1,5 +1,6 @@
 import AppKit
 import ObjectiveC
+import QuartzCore
 import SwiftUI
 
 @MainActor
@@ -67,8 +68,14 @@ final class PetPanelController {
             container.wantsLayer = true
             container.layer?.backgroundColor = NSColor.clear.cgColor
             container.setRootView(makePetRoot(coordinator: coordinator))
-            container.onClick = { [weak coordinator] in
-                coordinator?.showAssistant()
+            container.onPet = { [weak coordinator] in
+                coordinator?.handlePetGesture()
+            }
+            container.onFeed = { [weak coordinator] in
+                coordinator?.handleFeedGesture()
+            }
+            container.onShoo = { [weak coordinator] in
+                coordinator?.handleShooGesture()
             }
             container.onDragEnded = { [weak self] in
                 self?.persistPosition()
@@ -105,6 +112,52 @@ final class PetPanelController {
     func showSpeech(text: String) {
         updateBubbleFlipPreference()
         speech.show(text: text)
+    }
+
+    /// Hop to another spot on the same display (used by shoo gesture).
+    func dashToRandomNearbySpot(animated: Bool) {
+        guard let panel else { return }
+        let screen = panel.screen ?? ScreenManager.primaryScreen
+        let visible = screen.visibleFrame
+        let size = panel.frame.size
+        let current = panel.frame.origin
+
+        var candidate = current
+        for _ in 0..<8 {
+            let dx = CGFloat.random(in: 120...220) * (Bool.random() ? 1 : -1)
+            let dy = CGFloat.random(in: 80...160) * (Bool.random() ? 1 : -1)
+            let next = CGPoint(x: current.x + dx, y: current.y + dy)
+            let clamped = container?.clampedOrigin(next, for: panel)
+                ?? CGPoint(
+                    x: min(max(next.x, visible.minX + 4), visible.maxX - size.width - 4),
+                    y: min(max(next.y, visible.minY + 4), visible.maxY - size.height - 4)
+                )
+            if hypot(clamped.x - current.x, clamped.y - current.y) > 80 {
+                candidate = clamped
+                break
+            }
+            candidate = clamped
+        }
+
+        let apply = { [weak self] in
+            panel.setFrameOrigin(candidate)
+            self?.persistPosition()
+        }
+
+        if animated, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.35
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                panel.animator().setFrame(
+                    NSRect(origin: candidate, size: panel.frame.size),
+                    display: true
+                )
+            } completionHandler: { [weak self] in
+                self?.persistPosition()
+            }
+        } else {
+            apply()
+        }
     }
 
     func persistPosition() {
