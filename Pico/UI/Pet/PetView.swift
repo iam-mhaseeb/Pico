@@ -3,6 +3,8 @@ import SwiftUI
 struct PetFaceView: View {
     let state: PetState
     var size: CGFloat = PicoTheme.petSize
+    /// Extra squash from hover acknowledgements (1 = none).
+    var hoverSquash: CGFloat = 1
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -18,22 +20,16 @@ struct PetFaceView: View {
                 drawPet(context: context, in: rect, metrics: metrics, state: state)
             }
             .frame(width: size, height: size)
-            .scaleEffect(metrics.breatheScale)
+            .scaleEffect(
+                x: metrics.breatheScale * metrics.squashX * hoverSquash,
+                y: metrics.breatheScale * metrics.squashY / max(hoverSquash, 0.01)
+            )
             .offset(y: metrics.bounceOffset)
             .rotationEffect(metrics.earTilt / 8)
         }
         .accessibilityLabel("Pico")
-        .accessibilityHint(accessibilityHint)
-    }
-
-    private var accessibilityHint: String {
-        switch state {
-        case .idle: return "Idle"
-        case .listening: return "Listening"
-        case .thinking: return "Thinking"
-        case .success: return "Happy"
-        case .error: return "Something went wrong"
-        }
+        .accessibilityHint(state.accessibilityDescription)
+        .accessibilityValue(state.accessibilityDescription)
     }
 
     private func drawPet(
@@ -52,7 +48,17 @@ struct PetFaceView: View {
         context.fill(rightEar, with: .color(PicoTheme.petBody))
 
         let eyeY = rect.midY - rect.height * 0.05
-        let eyeSize = CGSize(width: rect.width * 0.11, height: rect.height * 0.13 * metrics.blinkOpacity)
+        let eyeHeightFactor: CGFloat = {
+            switch state {
+            case .sleeping: return 0.04
+            case .sad: return 0.09
+            default: return 0.13
+            }
+        }()
+        let eyeSize = CGSize(
+            width: rect.width * 0.11,
+            height: rect.height * eyeHeightFactor * max(metrics.blinkOpacity, 0.04)
+        )
         let leftEye = Ellipse().path(
             in: CGRect(
                 x: rect.midX - rect.width * 0.18,
@@ -72,20 +78,28 @@ struct PetFaceView: View {
         context.fill(leftEye, with: .color(PicoTheme.petEye))
         context.fill(rightEye, with: .color(PicoTheme.petEye))
 
+        let cheekOpacity: Double = {
+            switch state {
+            case .love, .celebrating: return 0.85
+            case .sad, .sleeping: return 0.25
+            default: return 0.55
+            }
+        }()
         let cheekSize = CGSize(width: rect.width * 0.12, height: rect.height * 0.08)
+        let cheekColor = Color(red: 1.0, green: 0.55, blue: 0.55).opacity(cheekOpacity)
         context.fill(
             Ellipse().path(in: CGRect(x: rect.midX - rect.width * 0.28, y: rect.midY + rect.height * 0.05, width: cheekSize.width, height: cheekSize.height)),
-            with: .color(PicoTheme.petCheek)
+            with: .color(cheekColor)
         )
         context.fill(
             Ellipse().path(in: CGRect(x: rect.midX + rect.width * 0.16, y: rect.midY + rect.height * 0.05, width: cheekSize.width, height: cheekSize.height)),
-            with: .color(PicoTheme.petCheek)
+            with: .color(cheekColor)
         )
 
         var mouth = Path()
         let mouthY = rect.midY + rect.height * 0.16
         switch state {
-        case .error:
+        case .error, .sad:
             mouth.addArc(
                 center: CGPoint(x: rect.midX, y: mouthY + 4),
                 radius: rect.width * 0.08,
@@ -93,16 +107,19 @@ struct PetFaceView: View {
                 endAngle: .degrees(340),
                 clockwise: true
             )
-        case .success, .listening:
+        case .success, .listening, .love, .celebrating:
             mouth.addArc(
                 center: CGPoint(x: rect.midX, y: mouthY - 2),
-                radius: rect.width * 0.09,
+                radius: rect.width * (state == .celebrating || state == .love ? 0.11 : 0.09),
                 startAngle: .degrees(20),
                 endAngle: .degrees(160),
                 clockwise: false
             )
-        case .thinking:
+        case .thinking, .working, .curious:
             mouth.addEllipse(in: CGRect(x: rect.midX - 2, y: mouthY, width: 4, height: 4))
+        case .sleeping:
+            mouth.move(to: CGPoint(x: rect.midX - 4, y: mouthY + 1))
+            mouth.addLine(to: CGPoint(x: rect.midX + 4, y: mouthY + 1))
         case .idle:
             mouth.move(to: CGPoint(x: rect.midX - 6, y: mouthY))
             mouth.addQuadCurve(
@@ -112,15 +129,33 @@ struct PetFaceView: View {
         }
         context.stroke(mouth, with: .color(PicoTheme.petEye), lineWidth: 1.8)
 
-        if state == .thinking {
+        if state == .thinking || state == .working {
             let dotY = rect.minY + rect.height * 0.08
             for index in 0..<3 {
                 let x = rect.midX + CGFloat(index - 1) * 7
                 context.fill(
                     Circle().path(in: CGRect(x: x, y: dotY, width: 3.5, height: 3.5)),
-                    with: .color(PicoTheme.accent.opacity(0.8))
+                    with: .color(PicoTheme.accent.opacity(state == .working ? 0.55 : 0.8))
                 )
             }
+        }
+
+        if state == .love {
+            let heart = heartPath(in: CGRect(
+                x: rect.midX + rect.width * 0.18,
+                y: rect.minY + rect.height * 0.02,
+                width: rect.width * 0.16,
+                height: rect.height * 0.14
+            ))
+            context.fill(heart, with: .color(PicoTheme.accent.opacity(0.9)))
+        }
+
+        if state == .sleeping {
+            context.draw(
+                Text("z"),
+                at: CGPoint(x: rect.midX + rect.width * 0.22, y: rect.minY + rect.height * 0.12),
+                anchor: .center
+            )
         }
     }
 
@@ -135,15 +170,49 @@ struct PetFaceView: View {
         path.closeSubpath()
         return path
     }
+
+    private func heartPath(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addCurve(
+            to: CGPoint(x: rect.minX, y: rect.minY + h * 0.35),
+            control1: CGPoint(x: rect.midX - w * 0.1, y: rect.maxY - h * 0.2),
+            control2: CGPoint(x: rect.minX, y: rect.midY)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.midX, y: rect.minY + h * 0.3),
+            control1: CGPoint(x: rect.minX, y: rect.minY),
+            control2: CGPoint(x: rect.midX - w * 0.15, y: rect.minY)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.35),
+            control1: CGPoint(x: rect.midX + w * 0.15, y: rect.minY),
+            control2: CGPoint(x: rect.maxX, y: rect.minY)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.midX, y: rect.maxY),
+            control1: CGPoint(x: rect.maxX, y: rect.midY),
+            control2: CGPoint(x: rect.midX + w * 0.1, y: rect.maxY - h * 0.2)
+        )
+        path.closeSubpath()
+        return path
+    }
 }
 
 struct PetView: View {
     @Bindable var coordinator: AppCoordinator
+    var hoverSquash: CGFloat = 1
 
     var body: some View {
-        PetFaceView(state: coordinator.petState, size: PicoTheme.petSize)
-            .frame(width: PicoTheme.petSize, height: PicoTheme.petSize)
-            .background(Color.clear)
-            // Drag, click, and context menu are handled by DraggablePetContainer.
+        PetFaceView(
+            state: coordinator.petState,
+            size: PicoTheme.petSize,
+            hoverSquash: hoverSquash
+        )
+        .frame(width: PicoTheme.petSize, height: PicoTheme.petSize)
+        .background(Color.clear)
+        // Drag, click, and context menu are handled by DraggablePetContainer.
     }
 }

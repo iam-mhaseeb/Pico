@@ -286,14 +286,17 @@ final class AppCoordinator {
         NSApp.terminate(nil)
     }
 
-    func setPetState(_ state: PetState) {
+    func setPetState(_ state: PetState, force: Bool = false) {
+        let resolved = PetStateMachine.resolve(current: petState, requested: state, force: force)
+        guard resolved != petState || force else { return }
         successResetTask?.cancel()
-        petState = state
+        petState = resolved
         petPanel.refreshContent()
-        if state == .success || state == .error {
+        if resolved.isTransient {
+            let delay: UInt64 = resolved == .celebrating ? 1_200_000_000 : 900_000_000
             successResetTask = Task {
-                try? await Task.sleep(nanoseconds: 900_000_000)
-                if !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: delay)
+                if !Task.isCancelled, self.petState == resolved {
                     self.petState = .idle
                     self.petPanel.refreshContent()
                 }

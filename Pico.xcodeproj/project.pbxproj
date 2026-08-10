@@ -57,6 +57,7 @@
 		F28391AD60E862C846CD9C79 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB4C64BA0BCFE33341E640 /* HistoryView.swift */; };
 		F793C3519E4CD64C15670A70 /* PicoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7397DD7AE2835E9554C9FE2 /* PicoTheme.swift */; };
 		FB381286C318C4CF9B3CF786 /* PromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925089FA20FD9B7CF51D9F70 /* PromptTemplates.swift */; };
+		C2D3E4F5A6B708193A4B5C6D /* PetStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,6 +123,7 @@
 		F0065B071EA3F8302B134198 /* TextActionMenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextActionMenuViewModel.swift; sourceTree = "<group>"; };
 		F3110FDAB6D0F502F5AD9727 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		F913A74DBECBC4B8E4120432 /* MacAIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAIProvider.swift; sourceTree = "<group>"; };
+		B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateMachineTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -138,6 +140,7 @@
 			isa = PBXGroup;
 			children = (
 				5662C61F6627DFF53077D9BC /* ConversationTitleGeneratorTests.swift */,
+				B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */,
 				1ECCEA049A1E85EA57D99584 /* PromptTemplatesTests.swift */,
 			);
 			path = PicoTests;
@@ -475,6 +478,7 @@
 			files = (
 				6BC3BD1B964E5CC28A7D9CBC /* ConversationTitleGeneratorTests.swift in Sources */,
 				9C70EA58645245140837055A /* PromptTemplatesTests.swift in Sources */,
+				C2D3E4F5A6B708193A4B5C6D /* PetStateMachineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
