@@ -203,15 +203,34 @@ struct PetFaceView: View {
 
 struct PetView: View {
     @Bindable var coordinator: AppCoordinator
+    var bubbleText: String?
+    var bubbleBelow: Bool = false
     var hoverSquash: CGFloat = 1
 
     var body: some View {
-        PetFaceView(
-            state: coordinator.petState,
-            size: PicoTheme.petSize,
-            hoverSquash: hoverSquash
+        VStack(spacing: 2) {
+            if let bubbleText, !bubbleBelow {
+                PetSpeechBubbleView(text: bubbleText, placeBelow: false)
+                    .frame(height: PetPanelController.bubbleSlotHeight - 2)
+            }
+
+            PetFaceView(
+                state: coordinator.petState,
+                size: PicoTheme.petSize,
+                hoverSquash: hoverSquash
+            )
+            .frame(width: PicoTheme.petSize, height: PicoTheme.petSize)
+
+            if let bubbleText, bubbleBelow {
+                PetSpeechBubbleView(text: bubbleText, placeBelow: true)
+                    .frame(height: PetPanelController.bubbleSlotHeight - 2)
+            }
+        }
+        .frame(
+            width: max(PicoTheme.petSize, PicoTheme.petBubbleSize),
+            height: PicoTheme.petSize + (bubbleText == nil ? 0 : PetPanelController.bubbleSlotHeight),
+            alignment: bubbleBelow ? .top : .bottom
         )
-        .frame(width: PicoTheme.petSize, height: PicoTheme.petSize)
         .background(Color.clear)
         // Drag, click, and context menu are handled by DraggablePetContainer.
     }

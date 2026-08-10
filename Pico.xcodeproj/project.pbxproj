@@ -58,6 +58,9 @@
 		F793C3519E4CD64C15670A70 /* PicoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7397DD7AE2835E9554C9FE2 /* PicoTheme.swift */; };
 		FB381286C318C4CF9B3CF786 /* PromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925089FA20FD9B7CF51D9F70 /* PromptTemplates.swift */; };
 		C2D3E4F5A6B708193A4B5C6D /* PetStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */; };
+		A1B2C3D4E5F60718293A0002 /* PetSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0001 /* PetSpeech.swift */; };
+		A1B2C3D4E5F60718293A0004 /* PetSpeechBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0003 /* PetSpeechBubbleView.swift */; };
+		A1B2C3D4E5F60718293A0006 /* PetSpeechTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0005 /* PetSpeechTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +127,9 @@
 		F3110FDAB6D0F502F5AD9727 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		F913A74DBECBC4B8E4120432 /* MacAIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAIProvider.swift; sourceTree = "<group>"; };
 		B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateMachineTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A0001 /* PetSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSpeech.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A0003 /* PetSpeechBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSpeechBubbleView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A0005 /* PetSpeechTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSpeechTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -141,6 +147,7 @@
 			children = (
 				5662C61F6627DFF53077D9BC /* ConversationTitleGeneratorTests.swift */,
 				B1E2C3D4A5F60718293A4B5C /* PetStateMachineTests.swift */,
+				A1B2C3D4E5F60718293A0005 /* PetSpeechTests.swift */,
 				1ECCEA049A1E85EA57D99584 /* PromptTemplatesTests.swift */,
 			);
 			path = PicoTests;
@@ -252,6 +259,8 @@
 				E77ED0E018A4724601E82B89 /* PetAnimation.swift */,
 				17FCD3DF2EC04B312CCA7A79 /* PetPanelController.swift */,
 				A97844F4C2C35B83BCB6E039 /* PetState.swift */,
+				A1B2C3D4E5F60718293A0003 /* PetSpeechBubbleView.swift */,
+				A1B2C3D4E5F60718293A0001 /* PetSpeech.swift */,
 				A59C3DAD0F87EE3FDA256656 /* PetView.swift */,
 			);
 			path = Pet;
@@ -456,6 +465,8 @@
 				5B784A903E586A2049B6A212 /* PetAnimation.swift in Sources */,
 				862882426438C0F351037EDE /* PetPanelController.swift in Sources */,
 				CB9A1D6B8B88CB700A501546 /* PetState.swift in Sources */,
+				A1B2C3D4E5F60718293A0004 /* PetSpeechBubbleView.swift in Sources */,
+				A1B2C3D4E5F60718293A0002 /* PetSpeech.swift in Sources */,
 				70D3AAC3CC415496B729745D /* PetView.swift in Sources */,
 				EA7A4024A24F61890251F04D /* PicoApp.swift in Sources */,
 				5D37B6ECA1E2B1F6608C5D03 /* PicoPanelChrome.swift in Sources */,
@@ -479,6 +490,7 @@
 				6BC3BD1B964E5CC28A7D9CBC /* ConversationTitleGeneratorTests.swift in Sources */,
 				9C70EA58645245140837055A /* PromptTemplatesTests.swift in Sources */,
 				C2D3E4F5A6B708193A4B5C6D /* PetStateMachineTests.swift in Sources */,
+				A1B2C3D4E5F60718293A0006 /* PetSpeechTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

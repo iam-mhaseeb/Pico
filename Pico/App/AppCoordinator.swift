@@ -304,6 +304,10 @@ final class AppCoordinator {
         }
     }
 
+    func showPetSpeech(_ kind: PetSpeechKind) {
+        petPanel.showSpeech(kind)
+    }
+
     private func updatePetVisibility() {
         let show = UserDefaults.standard.object(forKey: PreferenceKey.showPico) as? Bool ?? true
         if show && !isPaused {
@@ -325,7 +329,7 @@ final class AppCoordinator {
     /// Prefer opening Ask/History near the mascot so surfaces feel attached to Pico.
     private func panelOriginNearPet(size: CGSize) -> CGPoint {
         let fallbackScreen = ScreenManager.screenContainingFrontmostApp()
-        guard let petFrame = petPanel.frame else {
+        guard let petFrame = petPanel.petFaceFrame ?? petPanel.frame else {
             return CGPoint(
                 x: fallbackScreen.visibleFrame.midX - size.width / 2,
                 y: fallbackScreen.visibleFrame.midY - size.height / 2
