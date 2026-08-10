@@ -18,6 +18,8 @@ final class PetPanelController {
     private var bubbleBelow = false
     private var isHovering = false
     private var hoverSquash: CGFloat = 1
+    private var isGhosted = false
+    private let ghostOpacity: CGFloat = 0.3
 
     var frame: NSRect? {
         panel?.frame
@@ -96,12 +98,38 @@ final class PetPanelController {
             refreshContent()
         }
         panel?.orderFrontRegardless()
+        if isGhosted {
+            panel?.alphaValue = ghostOpacity
+        } else {
+            panel?.alphaValue = 1
+        }
         greetIfNeeded()
     }
 
     func hide() {
         speech.clear()
+        isGhosted = false
+        panel?.alphaValue = 1
         panel?.orderOut(nil)
+    }
+
+    func setGhosted(_ ghosted: Bool, animated: Bool = true) {
+        guard isGhosted != ghosted else { return }
+        isGhosted = ghosted
+        guard let panel, panel.isVisible else { return }
+
+        // Hover reduce-motion uses container alpha; ghost uses panel alpha so they compose.
+        let target: CGFloat = ghosted ? ghostOpacity : 1.0
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if !animated || reduceMotion {
+            panel.alphaValue = target
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = ghosted ? 0.22 : 0.35
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().alphaValue = target
+        }
     }
 
     func refreshContent() {

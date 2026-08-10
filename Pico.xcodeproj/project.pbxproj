@@ -63,6 +63,7 @@
 		A1B2C3D4E5F60718293A0006 /* PetSpeechTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0005 /* PetSpeechTests.swift */; };
 		A1B2C3D4E5F60718293A0012 /* PetEdgeSnap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0011 /* PetEdgeSnap.swift */; };
 		A1B2C3D4E5F60718293A0014 /* PetEdgeSnapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0013 /* PetEdgeSnapTests.swift */; };
+		A1B2C3D4E5F60718293A0022 /* GhostModeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A0021 /* GhostModeMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,6 +135,7 @@
 		A1B2C3D4E5F60718293A0005 /* PetSpeechTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSpeechTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A0011 /* PetEdgeSnap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetEdgeSnap.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A0013 /* PetEdgeSnapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetEdgeSnapTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A0021 /* GhostModeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhostModeMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -183,6 +185,7 @@
 			isa = PBXGroup;
 			children = (
 				4BDF5CED65394E61C65C4712 /* AccessibilityManager.swift */,
+				A1B2C3D4E5F60718293A0021 /* GhostModeMonitor.swift */,
 				9E14E45405B7EFC14BA274EF /* ClipboardManager.swift */,
 				633B1C6EC1714B69E122265F /* FloatingPanel.swift */,
 				7180A33B7EB70E84D4673C37 /* GlobalHotkeyManager.swift */,
@@ -441,6 +444,7 @@
 				75F0F0CC5A34D1FE3F8B9FDA /* AIProvider.swift in Sources */,
 				3BB0D7C6A9ED89311AEC10BD /* AIService.swift in Sources */,
 				2E23DE42693DECDB6B325C2E /* AccessibilityManager.swift in Sources */,
+				A1B2C3D4E5F60718293A0022 /* GhostModeMonitor.swift in Sources */,
 				BE119107AB2AC5BBEC927CC3 /* AppCoordinator.swift in Sources */,
 				B9B4A7A9ADF8C53949228F1D /* AppDelegate.swift in Sources */,
 				E3B8F903C43162FBE6B6FF86 /* AppEnvironment.swift in Sources */,

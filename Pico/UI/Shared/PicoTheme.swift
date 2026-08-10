@@ -36,4 +36,6 @@ enum PreferenceKey {
     static let isPaused = "isPaused"
     /// When true, pet springs to the nearest screen edge on drag release.
     static let petEdgeSnapEnabled = "petEdgeSnapEnabled"
+    /// When true, Pico fades while typing / focused in text fields.
+    static let ghostModeEnabled = "ghostModeEnabled"
 }

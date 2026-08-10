@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage(PreferenceKey.keepHistory) private var keepHistory = true
     @AppStorage(PreferenceKey.launchAtLogin) private var launchAtLogin = false
     @AppStorage(PreferenceKey.petEdgeSnapEnabled) private var petEdgeSnapEnabled = true
+    @AppStorage(PreferenceKey.ghostModeEnabled) private var ghostModeEnabled = true
 
     @State private var launchError: String?
     @State private var confirmClear = false
@@ -43,6 +44,14 @@ struct SettingsView: View {
 
                 Toggle("Snap to screen edges", isOn: $petEdgeSnapEnabled)
                 Text("When on, Pico springs to the nearest edge after you drag. Turn off to leave Pico free wherever you drop.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Ghost Mode", isOn: $ghostModeEnabled)
+                    .onChange(of: ghostModeEnabled) { _, newValue in
+                        coordinator.setGhostModeEnabled(newValue)
+                    }
+                Text("Ghost Mode fades Pico to about 30% opacity while you type or focus a text field, then restores after a short idle. Pause hides Pico completely and disables hotkeys; Ghost Mode only dims the mascot.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

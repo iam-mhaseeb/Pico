@@ -11,6 +11,7 @@ final class AppCoordinator {
     private let environment: AppEnvironment
     private let petPanel = PetPanelController()
     private let menuBar = MenuBarController()
+    private let ghostModeMonitor = GhostModeMonitor()
 
     private var assistantPanel: FloatingPanel?
     private var textPanel: FloatingPanel?
@@ -35,6 +36,10 @@ final class AppCoordinator {
             self?.showTextActions()
         }
 
+        ghostModeMonitor.onGhostActiveChanged = { [weak self] active in
+            self?.petPanel.setGhosted(active)
+        }
+
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -49,6 +54,7 @@ final class AppCoordinator {
     func start() {
         isPaused = UserDefaults.standard.bool(forKey: PreferenceKey.isPaused)
         menuBar.reloadMenu()
+        syncGhostModeEnabled()
 
         if !UserDefaults.standard.bool(forKey: PreferenceKey.hasCompletedOnboarding) {
             showOnboarding()
@@ -64,6 +70,7 @@ final class AppCoordinator {
                 environment.hotkeyManager.registrationFailedAsk
                 || environment.hotkeyManager.registrationFailedText
             updatePetVisibility()
+            startGhostModeIfNeeded()
         }
         menuBar.reloadMenu()
     }
@@ -261,6 +268,7 @@ final class AppCoordinator {
         UserDefaults.standard.set(isPaused, forKey: PreferenceKey.isPaused)
         if isPaused {
             environment.hotkeyManager.unregister()
+            ghostModeMonitor.stop()
             hideAssistant()
             hideTextPanel()
             hideHistory()
@@ -274,6 +282,36 @@ final class AppCoordinator {
     func setShowPico(_ show: Bool) {
         UserDefaults.standard.set(show, forKey: PreferenceKey.showPico)
         updatePetVisibility()
+        if show && !isPaused {
+            startGhostModeIfNeeded()
+        } else {
+            ghostModeMonitor.stop()
+        }
+    }
+
+    func setGhostModeEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: PreferenceKey.ghostModeEnabled)
+        syncGhostModeEnabled()
+        if enabled, !isPaused {
+            startGhostModeIfNeeded()
+        }
+    }
+
+    private func syncGhostModeEnabled() {
+        let enabled = UserDefaults.standard.object(forKey: PreferenceKey.ghostModeEnabled) as? Bool ?? true
+        ghostModeMonitor.setEnabled(enabled)
+        if !enabled {
+            petPanel.setGhosted(false, animated: false)
+        }
+    }
+
+    private func startGhostModeIfNeeded() {
+        let enabled = UserDefaults.standard.object(forKey: PreferenceKey.ghostModeEnabled) as? Bool ?? true
+        guard enabled, !isPaused else {
+            ghostModeMonitor.stop()
+            return
+        }
+        ghostModeMonitor.start()
     }
 
     func clearHistory() {
