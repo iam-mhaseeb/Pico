@@ -348,19 +348,19 @@ final class AppCoordinator {
 
     func handlePetGesture() {
         guard !isPaused else { return }
-        setPetState(.love)
+        setPetState(.love, force: true)
         showPetSpeech(.pet)
     }
 
     func handleFeedGesture() {
         guard !isPaused else { return }
-        setPetState(.celebrating)
+        setPetState(.celebrating, force: true)
         showPetSpeech(.feed)
     }
 
     func handleShooGesture() {
         guard !isPaused else { return }
-        setPetState(.sad)
+        setPetState(.sad, force: true)
         showPetSpeech(.shoo)
         petPanel.dashToRandomNearbySpot(animated: true)
     }
