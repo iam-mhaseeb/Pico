@@ -207,6 +207,8 @@ struct PetView: View {
     var bubbleBelow: Bool = false
     var hoverSquash: CGFloat = 1
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(spacing: 2) {
             if let bubbleText, !bubbleBelow {
@@ -220,6 +222,12 @@ struct PetView: View {
                 hoverSquash: hoverSquash
             )
             .frame(width: PicoTheme.petSize, height: PicoTheme.petSize)
+            .animation(
+                reduceMotion
+                    ? nil
+                    : .interpolatingSpring(stiffness: 380, damping: 18),
+                value: hoverSquash
+            )
 
             if let bubbleText, bubbleBelow {
                 PetSpeechBubbleView(text: bubbleText, placeBelow: true)

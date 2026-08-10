@@ -16,6 +16,8 @@ final class PetPanelController {
     private let speech = PetSpeechPresenter()
     private var didGreetThisSession = false
     private var bubbleBelow = false
+    private var isHovering = false
+    private var hoverSquash: CGFloat = 1
 
     var frame: NSRect? {
         panel?.frame
@@ -79,6 +81,9 @@ final class PetPanelController {
             }
             container.onDragEnded = { [weak self] in
                 self?.persistPosition()
+            }
+            container.onHoverChanged = { [weak self] hovering in
+                self?.setHovering(hovering)
             }
             container.menuBuilder = { [weak coordinator] in
                 Self.makeContextMenu(coordinator: coordinator)
@@ -197,8 +202,27 @@ final class PetPanelController {
         PetView(
             coordinator: coordinator,
             bubbleText: speech.text,
-            bubbleBelow: bubbleBelow
+            bubbleBelow: bubbleBelow,
+            hoverSquash: hoverSquash
         )
+    }
+
+    private func setHovering(_ hovering: Bool) {
+        // Drag path clears hover before calling; ignore while dragging.
+        if hovering, container?.isCurrentlyDragging == true {
+            return
+        }
+        isHovering = hovering
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if reduceMotion {
+            // Opacity / static highlight only — no squash animation.
+            hoverSquash = 1
+            container?.alphaValue = hovering ? 0.92 : 1.0
+        } else {
+            container?.alphaValue = 1.0
+            hoverSquash = hovering ? 1.08 : 1.0
+        }
+        refreshContent()
     }
 
     private func handleSpeechChange() {
