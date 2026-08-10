@@ -5,6 +5,7 @@ struct SettingsView: View {
     @AppStorage(PreferenceKey.showPico) private var showPico = true
     @AppStorage(PreferenceKey.keepHistory) private var keepHistory = true
     @AppStorage(PreferenceKey.launchAtLogin) private var launchAtLogin = false
+    @AppStorage(PreferenceKey.petEdgeSnapEnabled) private var petEdgeSnapEnabled = true
 
     @State private var launchError: String?
     @State private var confirmClear = false
@@ -37,6 +38,11 @@ struct SettingsView: View {
 
                 Text("Pico position")
                 Text("Drag Pico on the desktop to move. Position is remembered.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Snap to screen edges", isOn: $petEdgeSnapEnabled)
+                Text("When on, Pico springs to the nearest edge after you drag. Turn off to leave Pico free wherever you drop.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

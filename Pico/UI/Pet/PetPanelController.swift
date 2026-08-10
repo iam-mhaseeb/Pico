@@ -80,7 +80,7 @@ final class PetPanelController {
                 coordinator?.handleShooGesture()
             }
             container.onDragEnded = { [weak self] in
-                self?.persistPosition()
+                self?.finishDragWithSnap()
             }
             container.onHoverChanged = { [weak self] hovering in
                 self?.setHovering(hovering)
@@ -186,6 +186,48 @@ final class PetPanelController {
             Int(ScreenManager.displayID(for: screen)),
             forKey: PreferenceKey.petDisplayID
         )
+    }
+
+    private func finishDragWithSnap() {
+        guard let panel else {
+            persistPosition()
+            return
+        }
+        let defaults = UserDefaults.standard
+        let snapEnabled = defaults.object(forKey: PreferenceKey.petEdgeSnapEnabled) as? Bool ?? true
+        let result = PetEdgeSnap.snapOrigin(
+            for: panel.frame.size,
+            from: panel.frame.origin,
+            enabled: snapEnabled
+        )
+
+        let apply = { [weak self] in
+            panel.setFrameOrigin(result.origin)
+            self?.persistPosition()
+        }
+
+        guard result.origin != panel.frame.origin else {
+            persistPosition()
+            return
+        }
+
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            apply()
+            return
+        }
+
+        // Springy settle without fighting Mission Control (no continuous physics loop).
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.42
+            context.allowsImplicitAnimation = true
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.17, 0.89, 0.32, 1.28)
+            panel.animator().setFrame(
+                NSRect(origin: result.origin, size: panel.frame.size),
+                display: true
+            )
+        } completionHandler: { [weak self] in
+            self?.persistPosition()
+        }
     }
 
     func handleDisplayChange() {

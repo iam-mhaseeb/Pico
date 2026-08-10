@@ -34,4 +34,6 @@ enum PreferenceKey {
     static let assistantHeight = "assistantHeight"
     static let aiProviderID = "aiProviderID"
     static let isPaused = "isPaused"
+    /// When true, pet springs to the nearest screen edge on drag release.
+    static let petEdgeSnapEnabled = "petEdgeSnapEnabled"
 }
