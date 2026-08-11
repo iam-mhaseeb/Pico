@@ -13,7 +13,11 @@ struct HistoryView: View {
             onClose: onClose
         ) {
             Group {
-                if viewModel.sections.isEmpty {
+                if let loadError = viewModel.loadError {
+                    Text(loadError)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.sections.isEmpty {
                     EmptyStateView(
                         title: "No conversations yet",
                         message: "Ask me something and I’ll keep it here for you."
@@ -60,7 +64,7 @@ struct HistoryView: View {
                                         .buttonStyle(.plain)
                                         .contextMenu {
                                             Button("Delete", role: .destructive) {
-                                                viewModel.delete(conversation)
+                                                viewModel.requestDelete(conversation)
                                             }
                                         }
                                     }
@@ -76,5 +80,20 @@ struct HistoryView: View {
         .frame(width: 320, height: 420)
         .onAppear { viewModel.reload() }
         .onExitCommand(perform: onClose)
+        .confirmationDialog(
+            "Delete this conversation?",
+            isPresented: Binding(
+                get: { viewModel.conversationPendingDelete != nil },
+                set: { if !$0 { viewModel.cancelDelete() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                viewModel.confirmDelete()
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelDelete()
+            }
+        }
     }
 }

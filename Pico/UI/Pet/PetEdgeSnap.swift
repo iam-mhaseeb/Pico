@@ -7,6 +7,9 @@ enum PetEdgeSnap {
         case free
     }
 
+    /// Distance (pt) within which a drop will dock to an edge.
+    static let snapProximity: CGFloat = 72
+
     /// Nearest sensible snap target on the display containing `origin`.
     static func snapOrigin(
         for panelSize: CGSize,
@@ -20,10 +23,7 @@ enum PetEdgeSnap {
         let visible = screen.visibleFrame
         let margin = PicoTheme.screenMargin
 
-        let freeClamped = CGPoint(
-            x: min(max(origin.x, visible.minX + 4), visible.maxX - panelSize.width - 4),
-            y: min(max(origin.y, visible.minY + 4), visible.maxY - panelSize.height - 4)
-        )
+        let freeClamped = ScreenManager.clampOrigin(origin, size: panelSize, on: screen)
 
         guard enabled else {
             return (freeClamped, .free, screen)
@@ -36,19 +36,20 @@ enum PetEdgeSnap {
         let distBottom = midY - visible.minY
         let distTop = visible.maxY - midY
 
-        let nearestHorizontal: (Edge, CGFloat) = distLeft <= distRight
-            ? (.left, distLeft)
-            : (.right, distRight)
-        let nearestVertical: (Edge, CGFloat) = distBottom <= distTop
-            ? (.bottom, distBottom)
-            : (.top, distTop)
-
-        // Prefer the closer axis; bias slightly to bottom/side dock like a desk buddy.
-        let useHorizontal = nearestHorizontal.1 <= nearestVertical.1
-        let edge = useHorizontal ? nearestHorizontal.0 : nearestVertical.0
+        let candidates: [(Edge, CGFloat)] = [
+            (.left, distLeft),
+            (.right, distRight),
+            (.bottom, distBottom),
+            (.top, distTop)
+        ]
+        guard let nearest = candidates.min(by: { $0.1 < $1.1 }),
+              nearest.1 <= snapProximity
+        else {
+            return (freeClamped, .free, screen)
+        }
 
         let snapped: CGPoint
-        switch edge {
+        switch nearest.0 {
         case .left:
             snapped = CGPoint(x: visible.minX + margin, y: freeClamped.y)
         case .right:
@@ -66,6 +67,6 @@ enum PetEdgeSnap {
         case .free:
             snapped = freeClamped
         }
-        return (snapped, edge, screen)
+        return (snapped, nearest.0, screen)
     }
 }

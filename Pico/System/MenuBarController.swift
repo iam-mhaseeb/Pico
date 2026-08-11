@@ -26,13 +26,21 @@ final class MenuBarController {
 
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(menuItem("Ask Pico", action: #selector(ask)))
-        menu.addItem(menuItem("Text Actions", action: #selector(textActions)))
+        let paused = coordinator?.isPaused == true
+
+        let ask = menuItem("Ask Pico", action: #selector(ask))
+        ask.isEnabled = !paused
+        menu.addItem(ask)
+
+        let text = menuItem("Text Actions", action: #selector(textActions))
+        text.isEnabled = !paused
+        menu.addItem(text)
+
         menu.addItem(menuItem("History", action: #selector(history)))
         menu.addItem(.separator())
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
-        let pauseTitle = (coordinator?.isPaused == true) ? "Resume Pico" : "Pause Pico"
+        let pauseTitle = paused ? "Resume Pico" : "Pause Pico"
         menu.addItem(menuItem(pauseTitle, action: #selector(togglePause)))
         menu.addItem(menuItem("Quit Pico", action: #selector(quit)))
         return menu

@@ -7,6 +7,8 @@ final class AppCoordinator {
     var petState: PetState = .idle
     var isPaused = false
     var hotkeyRegistrationFailed = false
+    var hotkeyAskFailed = false
+    var hotkeyTextFailed = false
 
     private let environment: AppEnvironment
     private let petPanel = PetPanelController()
@@ -23,6 +25,7 @@ final class AppCoordinator {
     private var textViewModel: TextActionMenuViewModel?
     private var historyViewModel: HistoryViewModel?
     private var successResetTask: Task<Void, Never>?
+    private var textActionsTask: Task<Void, Never>?
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -37,7 +40,13 @@ final class AppCoordinator {
         }
 
         ghostModeMonitor.onGhostActiveChanged = { [weak self] active in
-            self?.petPanel.setGhosted(active)
+            guard let self else { return }
+            self.petPanel.setGhosted(active)
+            if active, self.petState == .idle {
+                self.setPetState(.sleeping)
+            } else if !active, self.petState == .sleeping {
+                self.setPetState(.idle)
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -66,9 +75,9 @@ final class AppCoordinator {
     func enterIdleMode() {
         if !isPaused {
             environment.hotkeyManager.register()
-            hotkeyRegistrationFailed =
-                environment.hotkeyManager.registrationFailedAsk
-                || environment.hotkeyManager.registrationFailedText
+            hotkeyAskFailed = environment.hotkeyManager.registrationFailedAsk
+            hotkeyTextFailed = environment.hotkeyManager.registrationFailedText
+            hotkeyRegistrationFailed = hotkeyAskFailed || hotkeyTextFailed
             updatePetVisibility()
             startGhostModeIfNeeded()
         }
@@ -134,7 +143,10 @@ final class AppCoordinator {
     }
 
     func hideAssistant() {
-        assistantViewModel?.cancel()
+        // Only cancel in-flight generation — keep multi-turn AI session across panel closes.
+        if assistantViewModel?.isSending == true {
+            assistantViewModel?.cancel()
+        }
         assistantPanel?.orderOut(nil)
         setPetState(.idle)
     }
@@ -143,6 +155,10 @@ final class AppCoordinator {
         guard !isPaused else { return }
         hideAssistant()
         hideHistory()
+
+        // Abandon any prior text-actions session so clipboard is restored.
+        textActionsTask?.cancel()
+        textViewModel?.abandon()
 
         let viewModel = TextActionMenuViewModel(processor: environment.textProcessor)
         viewModel.onPetState = { [weak self] state in
@@ -153,33 +169,51 @@ final class AppCoordinator {
         }
         textViewModel = viewModel
 
-        let root = TextActionMenu(
-            viewModel: viewModel,
-            onClose: { [weak self] in self?.hideTextPanel() }
-        )
+        textActionsTask = Task {
+            // Capture while the source app still has focus — before showing Pico's panel.
+            do {
+                let capture = try await self.environment.textProcessor.captureSelection()
+                guard !Task.isCancelled, self.textViewModel === viewModel else { return }
+                viewModel.apply(capture: capture)
+            } catch let error as TextProcessor.CaptureError {
+                guard !Task.isCancelled, self.textViewModel === viewModel else { return }
+                viewModel.apply(error: error)
+            } catch {
+                guard !Task.isCancelled, self.textViewModel === viewModel else { return }
+                viewModel.apply(error: .clipboardFailed)
+            }
 
-        let panel = textPanel ?? FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 280),
-            styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView]
-        )
-        panel.onEscape = { [weak self] in
-            self?.textViewModel?.cancel()
-            self?.hideTextPanel()
-        }
-        panel.setSwiftUIContent(root)
-        positionTextPanel(panel)
-        panel.makeKeyAndOrderFrontActivating()
-        textPanel = panel
+            guard !Task.isCancelled, self.textViewModel === viewModel else { return }
 
-        Task {
-            await viewModel.prepare()
+            let root = TextActionMenu(
+                viewModel: viewModel,
+                onClose: { [weak self] in self?.hideTextPanel() }
+            )
+
+            let panel = self.textPanel ?? FloatingPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 300, height: 280),
+                styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView]
+            )
+            panel.onEscape = { [weak self] in
+                self?.textViewModel?.cancel()
+                self?.hideTextPanel()
+            }
+            panel.setSwiftUIContent(root)
+            self.positionTextPanel(panel)
+            // Non-activating: do not steal focus from the source app.
+            panel.orderFrontRegardless()
+            self.textPanel = panel
             self.repositionTextPanelIfNeeded()
         }
     }
 
     func hideTextPanel() {
+        textActionsTask?.cancel()
+        textActionsTask = nil
+        textViewModel?.abandon()
+        textViewModel = nil
         textPanel?.orderOut(nil)
-        if petState != .thinking {
+        if petState == .thinking || petState == .listening || petState == .curious {
             setPetState(.idle)
         }
     }
@@ -247,7 +281,7 @@ final class AppCoordinator {
 
     func showOnboarding() {
         let panel = FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 480),
             styleMask: [.titled, .fullSizeContentView]
         )
         panel.title = "Welcome to Pico"
@@ -346,23 +380,41 @@ final class AppCoordinator {
         petPanel.showSpeech(kind)
     }
 
+    func handleAskFromPet() {
+        guard !isPaused else { return }
+        showAssistant()
+    }
+
     func handlePetGesture() {
         guard !isPaused else { return }
+        guard canPlayAmbientGesture else { return }
         setPetState(.love, force: true)
         showPetSpeech(.pet)
     }
 
     func handleFeedGesture() {
         guard !isPaused else { return }
+        guard canPlayAmbientGesture else { return }
         setPetState(.celebrating, force: true)
         showPetSpeech(.feed)
     }
 
     func handleShooGesture() {
         guard !isPaused else { return }
+        guard canPlayAmbientGesture else { return }
         setPetState(.sad, force: true)
         showPetSpeech(.shoo)
         petPanel.dashToRandomNearbySpot(animated: true)
+    }
+
+    private var canPlayAmbientGesture: Bool {
+        // Allow after success/error; block during active Ask/Text work.
+        switch petState {
+        case .listening, .thinking, .working:
+            return false
+        default:
+            return true
+        }
     }
 
     private func updatePetVisibility() {
@@ -416,13 +468,15 @@ final class AppCoordinator {
     private func positionTextPanel(_ panel: FloatingPanel) {
         let screen = ScreenManager.screenContainingFrontmostApp()
         let size = NSSize(width: 320, height: 300)
+        let visible = screen.visibleFrame
         var origin = CGPoint(
-            x: screen.visibleFrame.midX - size.width / 2,
-            y: screen.visibleFrame.midY - size.height / 2
+            x: visible.midX - size.width / 2,
+            y: visible.midY - size.height / 2
         )
         if let rect = textViewModel?.selectionRect, rect.width > 0 {
             origin = CGPoint(x: rect.midX - size.width / 2, y: rect.minY - size.height - 8)
         }
+        origin = ScreenManager.clampOrigin(origin, size: size, on: screen)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
     }
 

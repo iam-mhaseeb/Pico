@@ -11,6 +11,8 @@ struct HistorySection: Identifiable {
 @Observable
 final class HistoryViewModel {
     var sections: [HistorySection] = []
+    var conversationPendingDelete: Conversation?
+    var loadError: String?
     private let store: ConversationStore
 
     init(store: ConversationStore) {
@@ -21,14 +23,26 @@ final class HistoryViewModel {
         do {
             let conversations = try store.listConversations()
             sections = Self.group(conversations)
+            loadError = nil
         } catch {
             sections = []
+            loadError = "Couldn’t load history."
         }
     }
 
-    func delete(_ conversation: Conversation) {
+    func requestDelete(_ conversation: Conversation) {
+        conversationPendingDelete = conversation
+    }
+
+    func confirmDelete() {
+        guard let conversation = conversationPendingDelete else { return }
         try? store.delete(conversation)
+        conversationPendingDelete = nil
         reload()
+    }
+
+    func cancelDelete() {
+        conversationPendingDelete = nil
     }
 
     func clearAll() {

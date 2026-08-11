@@ -44,8 +44,10 @@ struct TextActionMenu: View {
                         },
                         onInsert: {
                             Task {
-                                await viewModel.insert()
-                                onClose()
+                                let succeeded = await viewModel.insert()
+                                if succeeded {
+                                    onClose()
+                                }
                             }
                         }
                     )
@@ -91,7 +93,8 @@ struct TextActionMenu: View {
         switch viewModel.phase {
         case .processing: return .thinking
         case .preview: return .success
-        case .error, .permissionRequired, .emptySelection: return .error
+        case .error: return .error
+        case .permissionRequired, .emptySelection: return .curious
         case .chooseAction: return .listening
         }
     }

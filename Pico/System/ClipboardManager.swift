@@ -9,6 +9,10 @@ struct PasteboardSnapshot: Sendable {
 final class ClipboardManager {
     private let pasteboard = NSPasteboard.general
 
+    var changeCount: Int {
+        pasteboard.changeCount
+    }
+
     func snapshot() -> PasteboardSnapshot {
         var items: [[String: Data]] = []
         for item in pasteboard.pasteboardItems ?? [] {

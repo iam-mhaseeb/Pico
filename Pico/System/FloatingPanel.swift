@@ -4,6 +4,8 @@ import SwiftUI
 final class FloatingPanel: NSPanel {
     var onEscape: (() -> Void)?
     var onResizeEnd: ((CGSize) -> Void)?
+    /// Pet panel should never take keyboard focus.
+    var allowsKeyFocus = true
 
     override init(
         contentRect: NSRect,
@@ -22,12 +24,12 @@ final class FloatingPanel: NSPanel {
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
         isMovableByWindowBackground = true
-        becomesKeyOnlyIfNeeded = false
+        becomesKeyOnlyIfNeeded = true
         hidesOnDeactivate = false
         animationBehavior = .utilityWindow
     }
 
-    override var canBecomeKey: Bool { true }
+    override var canBecomeKey: Bool { allowsKeyFocus }
     override var canBecomeMain: Bool { false }
 
     override func cancelOperation(_ sender: Any?) {
@@ -42,6 +44,10 @@ final class FloatingPanel: NSPanel {
     }
 
     func makeKeyAndOrderFrontActivating() {
+        guard allowsKeyFocus else {
+            orderFrontRegardless()
+            return
+        }
         NSApp.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
     }

@@ -20,6 +20,8 @@ final class TextActionMenuViewModel {
     var selectionRect: CGRect?
     private var strategy: TextReplacementStrategy = .clipboard
     private var pasteboardSnapshot: PasteboardSnapshot?
+    private var sourceAppPID: pid_t?
+    private var didFinish = false
 
     private let processor: TextProcessor
     var onPetState: ((PetState) -> Void)?
@@ -29,25 +31,34 @@ final class TextActionMenuViewModel {
         self.processor = processor
     }
 
+    func apply(capture: TextProcessor.CaptureResult) {
+        originalText = capture.text
+        strategy = capture.strategy
+        selectionRect = capture.selectionRect
+        pasteboardSnapshot = capture.pasteboardSnapshot
+        sourceAppPID = capture.sourceAppPID
+        phase = .chooseAction
+        onPetState?(.listening)
+    }
+
+    func apply(error: TextProcessor.CaptureError) {
+        switch error {
+        case .accessibilityRequired:
+            phase = .permissionRequired
+        case .noSelection:
+            phase = .emptySelection
+        case .clipboardFailed:
+            phase = .error(error.localizedDescription)
+        }
+        onPetState?(.error)
+    }
+
     func prepare() async {
         do {
             let capture = try await processor.captureSelection()
-            originalText = capture.text
-            strategy = capture.strategy
-            selectionRect = capture.selectionRect
-            pasteboardSnapshot = capture.pasteboardSnapshot
-            phase = .chooseAction
-            onPetState?(.listening)
+            apply(capture: capture)
         } catch let error as TextProcessor.CaptureError {
-            switch error {
-            case .accessibilityRequired:
-                phase = .permissionRequired
-            case .noSelection:
-                phase = .emptySelection
-            case .clipboardFailed:
-                phase = .error(error.localizedDescription)
-            }
-            onPetState?(.error)
+            apply(error: error)
         } catch {
             phase = .error(error.localizedDescription)
             onPetState?(.error)
@@ -62,30 +73,54 @@ final class TextActionMenuViewModel {
             suggestedText = try await processor.transform(action: action, text: originalText)
             phase = .preview
             onPetState?(.success)
+        } catch let error as AIError where error == .cancelled {
+            phase = .chooseAction
+            onPetState?(.listening)
         } catch {
             phase = .error((error as? LocalizedError)?.errorDescription ?? AIError.generationFailed.localizedDescription)
             onPetState?(.error)
         }
     }
 
-    func insert() async {
+    @discardableResult
+    func insert() async -> Bool {
         do {
             try await processor.insert(
                 result: suggestedText,
                 strategy: strategy,
-                pasteboardSnapshot: pasteboardSnapshot
+                pasteboardSnapshot: pasteboardSnapshot,
+                sourceAppPID: sourceAppPID
             )
+            pasteboardSnapshot = nil
             onPetState?(.success)
-            onFinished?()
+            finish()
+            return true
         } catch {
             phase = .error((error as? LocalizedError)?.errorDescription ?? TextReplacementError.replaceFailed.localizedDescription)
             onPetState?(.error)
+            return false
         }
     }
 
     func cancel() {
+        processor.cancelTransform()
         processor.cancelClipboardRestore(pasteboardSnapshot)
+        pasteboardSnapshot = nil
         onPetState?(.idle)
+        finish()
+    }
+
+    /// Restore clipboard if the panel is dismissed without an explicit cancel/insert.
+    func abandon() {
+        processor.cancelTransform()
+        processor.cancelClipboardRestore(pasteboardSnapshot)
+        pasteboardSnapshot = nil
+        onPetState?(.idle)
+    }
+
+    private func finish() {
+        guard !didFinish else { return }
+        didFinish = true
         onFinished?()
     }
 }

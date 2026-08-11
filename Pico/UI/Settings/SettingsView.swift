@@ -43,7 +43,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
 
                 Toggle("Snap to screen edges", isOn: $petEdgeSnapEnabled)
-                Text("When on, Pico springs to the nearest edge after you drag. Turn off to leave Pico free wherever you drop.")
+                Text("When on, Pico springs to a nearby edge if you drop close enough. Turn off to leave Pico free wherever you drop.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -51,17 +51,16 @@ struct SettingsView: View {
                     .onChange(of: ghostModeEnabled) { _, newValue in
                         coordinator.setGhostModeEnabled(newValue)
                     }
-                Text("Ghost Mode fades Pico to about 30% opacity while you type or focus a text field, then restores after a short idle. Pause hides Pico completely and disables hotkeys; Ghost Mode only dims the mascot.")
+                Text("Ghost Mode fades Pico while you focus a text field, then restores after a short idle. Pause hides Pico and disables hotkeys.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("Pet gestures") {
-                LabeledContent("Pet", value: "Click")
-                LabeledContent("Feed", value: "Double-click")
-                LabeledContent("Shoo", value: "Right-click")
-                LabeledContent("Menu", value: "Press & hold")
-                Text("Gestures play short reactions without opening Ask Pico. Drag still repositions Pico.")
+                LabeledContent("Ask Pico", value: "Click")
+                LabeledContent("Pet", value: "Double-click")
+                LabeledContent("Menu / Feed / Shoo", value: "Right-click")
+                Text("Drag still repositions Pico. Ambient gestures pause while Ask is busy.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -70,7 +69,7 @@ struct SettingsView: View {
                 LabeledContent("Ask Pico", value: "⌥ Space")
                 LabeledContent("Text Actions", value: "⌥ ⇧ Space")
                 if coordinator.hotkeyRegistrationFailed {
-                    Text("Shortcut unavailable. It may be used by another app.")
+                    Text(hotkeyFailureMessage)
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -96,6 +95,12 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .frame(width: 420, height: 560)
+        .onAppear {
+            launchAtLogin = LaunchAtLoginManager.isEnabled
+            if LaunchAtLoginManager.requiresApproval {
+                launchError = "Approval required in System Settings → Login Items."
+            }
+        }
         .confirmationDialog(
             "Delete all conversations?",
             isPresented: $confirmClear,
@@ -105,6 +110,21 @@ struct SettingsView: View {
                 coordinator.clearHistory()
             }
             Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private var hotkeyFailureMessage: String {
+        let askFailed = coordinator.hotkeyAskFailed
+        let textFailed = coordinator.hotkeyTextFailed
+        switch (askFailed, textFailed) {
+        case (true, true):
+            return "Ask (⌥ Space) and Text Actions (⌥ ⇧ Space) are unavailable — another app may be using them."
+        case (true, false):
+            return "Ask shortcut (⌥ Space) is unavailable — another app may be using it."
+        case (false, true):
+            return "Text Actions shortcut (⌥ ⇧ Space) is unavailable — another app may be using it."
+        default:
+            return "Shortcut unavailable. It may be used by another app."
         }
     }
 }

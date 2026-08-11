@@ -20,7 +20,8 @@ final class GlobalHotkeyManager {
     private var isRegistered = false
 
     func register() {
-        guard !isRegistered else { return }
+        // Always re-attempt so a previous conflict can recover after the other app releases the key.
+        unregister()
 
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
@@ -47,7 +48,7 @@ final class GlobalHotkeyManager {
         }
 
         let selfPointer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
-        InstallEventHandler(
+        let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),
             handler,
             1,
@@ -55,6 +56,12 @@ final class GlobalHotkeyManager {
             selfPointer,
             &eventHandler
         )
+        guard installStatus == noErr else {
+            registrationFailedAsk = true
+            registrationFailedText = true
+            isRegistered = false
+            return
+        }
 
         registrationFailedAsk = !registerHotKey(
             id: .ask,
@@ -68,7 +75,7 @@ final class GlobalHotkeyManager {
             modifiers: UInt32(optionKey | shiftKey),
             ref: &textHotKeyRef
         )
-        isRegistered = true
+        isRegistered = !registrationFailedAsk || !registrationFailedText
     }
 
     func unregister() {

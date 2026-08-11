@@ -2,27 +2,25 @@ import AppKit
 @preconcurrency import ApplicationServices
 import Foundation
 
-/// Fades Pico while the user is typing or focused in an editable field.
+/// Fades Pico while the user is focused in an editable field (and briefly after typing there).
 @MainActor
 final class GhostModeMonitor {
     var onGhostActiveChanged: ((Bool) -> Void)?
 
     private(set) var isGhostActive = false
     private var enabled = true
-    private var lastActivityAt: Date?
+    private var lastEditableActivityAt: Date?
     private var pollTimer: Timer?
     private var localKeyMonitor: Any?
     private var globalKeyMonitor: Any?
 
-    /// How long after the last key/focus activity before restoring full opacity.
+    /// How long after leaving an editable field before restoring full opacity.
     var idleRestoreDelay: TimeInterval = 1.6
-    /// Target opacity while ghosted.
-    var ghostOpacity: CGFloat = 0.3
 
     func setEnabled(_ enabled: Bool) {
         self.enabled = enabled
         if !enabled {
-            lastActivityAt = nil
+            lastEditableActivityAt = nil
             updateGhostActive(false)
         } else {
             evaluate()
@@ -33,16 +31,18 @@ final class GhostModeMonitor {
         stopMonitors()
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
-            self?.noteActivity()
+            MainActor.assumeIsolated {
+                self?.noteKeyIfEditing()
+            }
             return event
         }
         globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] _ in
             Task { @MainActor in
-                self?.noteActivity()
+                self?.noteKeyIfEditing()
             }
         }
 
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { [weak self] _ in
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.evaluate()
             }
@@ -55,7 +55,7 @@ final class GhostModeMonitor {
 
     func stop() {
         stopMonitors()
-        lastActivityAt = nil
+        lastEditableActivityAt = nil
         updateGhostActive(false)
     }
 
@@ -72,9 +72,10 @@ final class GhostModeMonitor {
         pollTimer = nil
     }
 
-    private func noteActivity() {
+    private func noteKeyIfEditing() {
         guard enabled else { return }
-        lastActivityAt = Date()
+        guard isFocusedOnEditableText() else { return }
+        lastEditableActivityAt = Date()
         updateGhostActive(true)
     }
 
@@ -85,13 +86,13 @@ final class GhostModeMonitor {
         }
 
         if isFocusedOnEditableText() {
-            lastActivityAt = Date()
+            lastEditableActivityAt = Date()
             updateGhostActive(true)
             return
         }
 
-        if let lastActivityAt,
-           Date().timeIntervalSince(lastActivityAt) < idleRestoreDelay {
+        if let lastEditableActivityAt,
+           Date().timeIntervalSince(lastEditableActivityAt) < idleRestoreDelay {
             updateGhostActive(true)
             return
         }
@@ -120,7 +121,7 @@ final class GhostModeMonitor {
 
         let element = focusedObject as! AXUIElement
 
-        if let editable = copyBool(element, kAXEditableAttribute as String), editable {
+        if let editable = copyBool(element, kAXIsEditableAttribute as String), editable {
             return true
         }
 
@@ -135,7 +136,6 @@ final class GhostModeMonitor {
             return true
         }
 
-        // Some editors expose a focused element that inserts text.
         if let focused = copyBool(element, kAXFocusedAttribute as String), focused,
            copyString(element, kAXValueAttribute as String) != nil,
            role.contains("Text") || role.contains("Editor") {

@@ -5,8 +5,6 @@ enum PicoTheme {
     static let controlCornerRadius: CGFloat = 10
     static let petSize: CGFloat = 56
     static let petBubbleSize: CGFloat = 72
-    static let petMinSize: CGFloat = 40
-    static let petMaxSize: CGFloat = 80
     static let panelGap: CGFloat = 12
     static let panelPadding: CGFloat = 16
     static let assistantMinWidth: CGFloat = 320
@@ -14,6 +12,7 @@ enum PicoTheme {
     static let assistantDefaultWidth: CGFloat = 380
     static let assistantDefaultHeight: CGFloat = 420
     static let screenMargin: CGFloat = 20
+    static let ghostOpacity: CGFloat = 0.3
 
     static let accent = Color(red: 0.95, green: 0.55, blue: 0.35)
     static let petBody = Color(red: 0.98, green: 0.78, blue: 0.45)

@@ -30,6 +30,8 @@ final class PetSpeechPresenter {
 
     /// Default bubble lifetime in seconds.
     var ttl: TimeInterval = 2.0
+    /// Avoid spamming VoiceOver when the user pets rapidly.
+    private var lastAnnouncementAt: Date = .distantPast
 
     func show(_ kind: PetSpeechKind) {
         show(text: PetSpeechLines.line(for: kind))
@@ -39,7 +41,11 @@ final class PetSpeechPresenter {
         dismissTask?.cancel()
         self.text = text
         onChange?()
-        announce(text)
+        let now = Date()
+        if now.timeIntervalSince(lastAnnouncementAt) > 1.5 {
+            lastAnnouncementAt = now
+            announce(text)
+        }
 
         let lifetime = ttl
         dismissTask = Task { [weak self] in

@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     var onFinished: () -> Void
     @State private var page = 0
+    @State private var launchAtLoginPreferred = false
 
     private let steps: [(title: String, shortTitle: String)] = [
         ("Meet", "Meet"),
@@ -136,13 +137,12 @@ struct OnboardingView: View {
             Text("Play with Pico")
                 .font(.title2.weight(.semibold))
             VStack(alignment: .leading, spacing: 6) {
-                Text("Click — pet")
-                Text("Double-click — feed")
-                Text("Right-click — shoo")
-                Text("Press & hold — menu")
+                Text("Click — Ask Pico")
+                Text("Double-click — pet")
+                Text("Right-click — menu (Feed / Shoo)")
             }
             .font(.body.monospaced())
-            Text("Drag to move. Ask Pico stays on ⌥ Space.")
+            Text("Drag to move. Hotkeys still work from anywhere.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -172,13 +172,17 @@ struct OnboardingView: View {
                 .font(.title.weight(.semibold))
             Text("Pico will sit quietly until you need help.")
                 .foregroundStyle(.secondary)
+            Toggle("Launch Pico at login", isOn: $launchAtLoginPreferred)
+                .toggleStyle(.checkbox)
         }
     }
 
     private func finish() {
         UserDefaults.standard.set(true, forKey: PreferenceKey.hasCompletedOnboarding)
-        UserDefaults.standard.set(true, forKey: PreferenceKey.launchAtLogin)
-        try? LaunchAtLoginManager.setEnabled(true)
+        UserDefaults.standard.set(launchAtLoginPreferred, forKey: PreferenceKey.launchAtLogin)
+        if launchAtLoginPreferred {
+            try? LaunchAtLoginManager.setEnabled(true)
+        }
         onFinished()
     }
 }

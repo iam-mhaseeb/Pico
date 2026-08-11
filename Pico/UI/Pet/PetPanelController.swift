@@ -19,7 +19,7 @@ final class PetPanelController {
     private var isHovering = false
     private var hoverSquash: CGFloat = 1
     private var isGhosted = false
-    private let ghostOpacity: CGFloat = 0.3
+    private var ghostOpacity: CGFloat { PicoTheme.ghostOpacity }
 
     var frame: NSRect? {
         panel?.frame
@@ -62,16 +62,18 @@ final class PetPanelController {
             panel.hasShadow = false
             panel.isOpaque = false
             panel.backgroundColor = .clear
+            panel.allowsKeyFocus = false
             panel.contentView?.wantsLayer = true
             panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
-            // Never become key — speech bubbles must not steal focus.
-            panel.becomesKeyOnlyIfNeeded = true
 
             let container = DraggablePetContainer(frame: NSRect(origin: .zero, size: size))
             container.autoresizingMask = [.width, .height]
             container.wantsLayer = true
             container.layer?.backgroundColor = NSColor.clear.cgColor
             container.setRootView(makePetRoot(coordinator: coordinator))
+            container.onAsk = { [weak coordinator] in
+                coordinator?.handleAskFromPet()
+            }
             container.onPet = { [weak coordinator] in
                 coordinator?.handlePetGesture()
             }
@@ -223,18 +225,37 @@ final class PetPanelController {
         }
         let defaults = UserDefaults.standard
         let snapEnabled = defaults.object(forKey: PreferenceKey.petEdgeSnapEnabled) as? Bool ?? true
+        // Snap using the pet-face footprint so speech-bubble chrome doesn't skew docking.
+        let faceSize = CGSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
+        let faceOrigin: CGPoint = {
+            if speech.text != nil, bubbleBelow {
+                return CGPoint(x: panel.frame.origin.x, y: panel.frame.maxY - PicoTheme.petSize)
+            }
+            return panel.frame.origin
+        }()
         let result = PetEdgeSnap.snapOrigin(
-            for: panel.frame.size,
-            from: panel.frame.origin,
+            for: faceSize,
+            from: faceOrigin,
             enabled: snapEnabled
         )
 
+        let targetOrigin: CGPoint = {
+            if speech.text != nil, bubbleBelow {
+                return CGPoint(x: result.origin.x, y: result.origin.y - Self.bubbleSlotHeight)
+            }
+            if speech.text != nil {
+                let width = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
+                return CGPoint(x: result.origin.x - (width - PicoTheme.petSize) / 2, y: result.origin.y)
+            }
+            return result.origin
+        }()
+
         let apply = { [weak self] in
-            panel.setFrameOrigin(result.origin)
+            panel.setFrameOrigin(targetOrigin)
             self?.persistPosition()
         }
 
-        guard result.origin != panel.frame.origin else {
+        guard targetOrigin != panel.frame.origin else {
             persistPosition()
             return
         }
@@ -244,13 +265,12 @@ final class PetPanelController {
             return
         }
 
-        // Springy settle without fighting Mission Control (no continuous physics loop).
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.42
             context.allowsImplicitAnimation = true
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.17, 0.89, 0.32, 1.28)
             panel.animator().setFrame(
-                NSRect(origin: result.origin, size: panel.frame.size),
+                NSRect(origin: targetOrigin, size: panel.frame.size),
                 display: true
             )
         } completionHandler: { [weak self] in
@@ -261,9 +281,18 @@ final class PetPanelController {
     func handleDisplayChange() {
         guard let panel else { return }
         let displayID = UInt32(UserDefaults.standard.integer(forKey: PreferenceKey.petDisplayID))
-        if ScreenManager.screen(forDisplayID: displayID) == nil {
-            let origin = ScreenManager.defaultPetOrigin(on: ScreenManager.primaryScreen)
-            panel.setFrameOrigin(origin)
+        let screen = ScreenManager.screen(forDisplayID: displayID) ?? ScreenManager.primaryScreen
+        let clamped = ScreenManager.clampOrigin(
+            panel.frame.origin,
+            size: panel.frame.size,
+            on: screen
+        )
+        if clamped != panel.frame.origin || ScreenManager.screen(forDisplayID: displayID) == nil {
+            if ScreenManager.screen(forDisplayID: displayID) == nil {
+                panel.setFrameOrigin(ScreenManager.defaultPetOrigin(on: ScreenManager.primaryScreen))
+            } else {
+                panel.setFrameOrigin(clamped)
+            }
             persistPosition()
         }
     }
@@ -371,11 +400,27 @@ final class PetPanelController {
 
     private static func makeContextMenu(coordinator: AppCoordinator?) -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(Self.item("Ask Pico") { coordinator?.showAssistant() })
+        let paused = coordinator?.isPaused == true
+        let ask = Self.item("Ask Pico") { coordinator?.showAssistant() }
+        ask.isEnabled = !paused
+        menu.addItem(ask)
+        let text = Self.item("Text Actions") { coordinator?.showTextActions() }
+        text.isEnabled = !paused
+        menu.addItem(text)
         menu.addItem(Self.item("History") { coordinator?.showHistory() })
-        menu.addItem(Self.item("Settings") { coordinator?.showSettings() })
         menu.addItem(.separator())
-        let pauseTitle = (coordinator?.isPaused == true) ? "Resume Pico" : "Pause Pico"
+        let pet = Self.item("Pet Pico") { coordinator?.handlePetGesture() }
+        pet.isEnabled = !paused
+        menu.addItem(pet)
+        let feed = Self.item("Feed Pico") { coordinator?.handleFeedGesture() }
+        feed.isEnabled = !paused
+        menu.addItem(feed)
+        let shoo = Self.item("Shoo Pico") { coordinator?.handleShooGesture() }
+        shoo.isEnabled = !paused
+        menu.addItem(shoo)
+        menu.addItem(.separator())
+        menu.addItem(Self.item("Settings") { coordinator?.showSettings() })
+        let pauseTitle = paused ? "Resume Pico" : "Pause Pico"
         menu.addItem(Self.item(pauseTitle) { coordinator?.togglePause() })
         menu.addItem(Self.item("Quit Pico") { coordinator?.quit() })
         return menu

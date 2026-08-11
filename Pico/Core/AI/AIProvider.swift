@@ -12,6 +12,7 @@ enum AIError: LocalizedError, Sendable, Equatable {
     case generationFailed
     case cancelled
     case emptyPrompt
+    case inputTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -32,6 +33,8 @@ enum AIError: LocalizedError, Sendable, Equatable {
             return "Cancelled."
         case .emptyPrompt:
             return "Type something first."
+        case .inputTooLarge:
+            return "That text is a bit too long for me. Try a shorter selection."
         }
     }
 }
@@ -48,4 +51,5 @@ protocol AIProvider: Sendable {
     func generate(prompt: String, instructions: String?) async throws -> String
     func cancel(sessionID: UUID?)
     func seedHistory(sessionID: UUID, messages: [(role: String, content: String)])
+    func dropSession(sessionID: UUID)
 }

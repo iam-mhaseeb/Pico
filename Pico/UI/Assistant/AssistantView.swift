@@ -30,13 +30,7 @@ struct AssistantView: View {
                 if let errorMessage = viewModel.errorMessage {
                     FriendlyErrorView(
                         message: errorMessage,
-                        onRetry: {
-                            viewModel.errorMessage = nil
-                            if let last = viewModel.messages.last(where: { $0.role == "user" }) {
-                                viewModel.input = last.content
-                                viewModel.send()
-                            }
-                        },
+                        onRetry: { viewModel.retryLastFailure() },
                         onDismiss: { viewModel.errorMessage = nil }
                     )
                     .frame(maxHeight: 180)
@@ -62,7 +56,7 @@ struct AssistantView: View {
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                         Spacer()
-                        Text("⌘↵ Ask")
+                        Text("↵ Ask · ⇧↵ newline")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }

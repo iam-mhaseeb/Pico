@@ -2,19 +2,21 @@
 
 Use this during Phase 7 polish. Mark each cell after manual testing.
 
-| App | Ask hotkey | Capture selection | Preview | Insert | Notes |
-| --- | --- | --- | --- | --- | --- |
-| Safari | | | | | |
-| Chrome | | | | | |
-| Slack | | | | | |
-| Discord | | | | | |
-| VS Code | | | | | |
-| Terminal | | | | | Selection quirks expected |
-| Notes | | | | | |
-| Mail | | | | | |
-| TextEdit | | | | | |
-| Microsoft Word | | | | | |
-| Outlook | | | | | |
+
+| App            | Ask hotkey | Capture selection | Preview | Insert | Notes                     |
+| -------------- | ---------- | ----------------- | ------- | ------ | ------------------------- |
+| Safari         |            |                   |         |        |                           |
+| Chrome         |            |                   |         |        |                           |
+| Slack          |            |                   |         |        |                           |
+| Discord        |            |                   |         |        |                           |
+| VS Code        |            |                   |         |        |                           |
+| Terminal       |            |                   |         |        | Selection quirks expected |
+| Notes          |            |                   |         |        |                           |
+| Mail           |            |                   |         |        |                           |
+| TextEdit       |            |                   |         |        |                           |
+| Microsoft Word |            |                   |         |        |                           |
+| Outlook        |            |                   |         |        |                           |
+
 
 ## System scenarios
 

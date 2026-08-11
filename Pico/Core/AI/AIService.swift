@@ -27,6 +27,10 @@ final class AIService {
         provider.seedHistory(sessionID: conversationID, messages: messages)
     }
 
+    func dropSession(conversationID: UUID) {
+        provider.dropSession(sessionID: conversationID)
+    }
+
     func cancelAsk(conversationID: UUID?) {
         provider.cancel(sessionID: conversationID)
     }

@@ -102,13 +102,8 @@ final class AccessibilityManager {
     }
 
     private func convertAXRectToCocoa(_ axRect: CGRect) -> CGRect {
-        guard let screen = NSScreen.screens.first else { return axRect }
-        let screenHeight = screen.frame.maxY
-        return CGRect(
-            x: axRect.origin.x,
-            y: screenHeight - axRect.origin.y - axRect.height,
-            width: axRect.width,
-            height: axRect.height
-        )
+        // AX bounds are top-left global; convert via the union of all screens.
+        ScreenManager.cocoaRect(fromCGWindowBounds: axRect)
     }
 }
+
