@@ -3,6 +3,12 @@ import Carbon
 import CoreGraphics
 import Foundation
 
+@MainActor
+protocol KeyEventSynthesizing {
+    func copy()
+    func paste()
+}
+
 enum KeyEventSynthesizer {
     static func copy() {
         postCommandKey(keyCode: UInt16(kVK_ANSI_C))
@@ -21,4 +27,9 @@ enum KeyEventSynthesizer {
         keyDown?.post(tap: .cghidEventTap)
         keyUp?.post(tap: .cghidEventTap)
     }
+}
+
+struct SystemKeyEventSynthesizer: KeyEventSynthesizing {
+    func copy() { KeyEventSynthesizer.copy() }
+    func paste() { KeyEventSynthesizer.paste() }
 }

@@ -3,19 +3,22 @@ import Foundation
 
 @MainActor
 final class TextProcessor {
-    private let accessibility: AccessibilityManager
+    private let accessibility: any AccessibilityProviding
     private let clipboard: ClipboardManager
     private let aiService: AIService
+    private let keyEvents: any KeyEventSynthesizing
     private var transformTask: Task<String, Error>?
 
     init(
-        accessibility: AccessibilityManager,
+        accessibility: any AccessibilityProviding,
         clipboard: ClipboardManager,
-        aiService: AIService
+        aiService: AIService,
+        keyEvents: any KeyEventSynthesizing = SystemKeyEventSynthesizer()
     ) {
         self.accessibility = accessibility
         self.clipboard = clipboard
         self.aiService = aiService
+        self.keyEvents = keyEvents
     }
 
     struct CaptureResult {
@@ -62,7 +65,7 @@ final class TextProcessor {
 
         let snapshot = clipboard.snapshot()
         let changeBefore = clipboard.changeCount
-        KeyEventSynthesizer.copy()
+        keyEvents.copy()
 
         do {
             var changed = false
@@ -76,7 +79,7 @@ final class TextProcessor {
 
             guard changed else {
                 clipboard.restore(snapshot)
-                throw CaptureError.clipboardFailed
+                throw CaptureError.noSelection
             }
 
             guard let copied = clipboard.readString(), !copied.isEmpty else {
@@ -163,7 +166,7 @@ final class TextProcessor {
         let localSnapshot = snapshot ?? clipboard.snapshot()
         clipboard.writeString(result)
         let changeBeforePaste = clipboard.changeCount
-        KeyEventSynthesizer.paste()
+        keyEvents.paste()
 
         // Give the target app time to read the pasteboard before restore.
         var settled = false

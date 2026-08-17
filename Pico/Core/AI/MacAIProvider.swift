@@ -5,8 +5,6 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
     let id = "mac_local"
     let displayName = "On-device AI"
 
-    private static let maxPromptCharacters = 12_000
-
     private let lock = NSLock()
     private var sessions: [UUID: LanguageModelSession] = [:]
     private var streamTasks: [UUID: Task<Void, Never>] = [:]
@@ -48,18 +46,16 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
                         return
                     }
 
-                    let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else {
-                        continuation.finish(throwing: AIError.emptyPrompt)
-                        return
-                    }
-                    guard trimmed.count <= Self.maxPromptCharacters else {
-                        continuation.finish(throwing: AIError.inputTooLarge)
+                    let trimmed: String
+                    do {
+                        trimmed = try PromptValidation.validatedPrompt(prompt)
+                    } catch {
+                        continuation.finish(throwing: error)
                         return
                     }
 
-                    let promptToSend = self.promptIncludingSeededHistory(
-                        sessionID: sessionID,
+                    let promptToSend = PromptValidation.promptIncludingHistory(
+                        history: self.seededHistory(for: sessionID),
                         prompt: trimmed
                     )
 
@@ -126,9 +122,7 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
             throw error
         }
 
-        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw AIError.emptyPrompt }
-        guard trimmed.count <= Self.maxPromptCharacters else { throw AIError.inputTooLarge }
+        let trimmed = try PromptValidation.validatedPrompt(prompt)
 
         generateTask?.cancel()
         let task = Task {
@@ -192,24 +186,15 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
         lock.unlock()
     }
 
-    private func promptIncludingSeededHistory(sessionID: UUID?, prompt: String) -> String {
+    private func seededHistory(for sessionID: UUID?) -> [(role: String, content: String)]? {
         lock.lock()
         defer { lock.unlock() }
         guard let sessionID, let history = seededHistories[sessionID], !history.isEmpty else {
-            return prompt
+            return nil
         }
         // Seed only once — next turns use the live LanguageModelSession transcript.
         seededHistories[sessionID] = nil
-        let historyBlock = history.map { message in
-            "\(message.role): \(message.content)"
-        }.joined(separator: "\n")
-        return """
-        Previous conversation:
-        \(historyBlock)
-
-        User:
-        \(prompt)
-        """
+        return history
     }
 
     private func clearSeededHistory(for sessionID: UUID?) {

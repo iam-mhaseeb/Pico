@@ -26,21 +26,22 @@ final class MenuBarController {
 
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
+        menu.autoenablesItems = false
         let paused = coordinator?.isPaused == true
 
         let ask = menuItem("Ask Pico", action: #selector(ask))
-        ask.isEnabled = !paused
+        ask.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(ask)
 
         let text = menuItem("Text Actions", action: #selector(textActions))
-        text.isEnabled = !paused
+        text.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(text)
 
         menu.addItem(menuItem("History", action: #selector(history)))
         menu.addItem(.separator())
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
-        let pauseTitle = paused ? "Resume Pico" : "Pause Pico"
+        let pauseTitle = PicoMenuLayout.pauseTitle(isPaused: paused)
         menu.addItem(menuItem(pauseTitle, action: #selector(togglePause)))
         menu.addItem(menuItem("Quit Pico", action: #selector(quit)))
         return menu

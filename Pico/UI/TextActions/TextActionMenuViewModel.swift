@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class TextActionMenuViewModel {
-    enum Phase {
+    enum Phase: Equatable {
         case permissionRequired
         case emptySelection
         case chooseAction
@@ -45,12 +45,14 @@ final class TextActionMenuViewModel {
         switch error {
         case .accessibilityRequired:
             phase = .permissionRequired
+            onPetState?(.curious)
         case .noSelection:
             phase = .emptySelection
+            onPetState?(.curious)
         case .clipboardFailed:
             phase = .error(error.localizedDescription)
+            onPetState?(.error)
         }
-        onPetState?(.error)
     }
 
     func prepare() async {

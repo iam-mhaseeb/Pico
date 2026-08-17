@@ -57,4 +57,15 @@ final class PetEdgeSnapTests: XCTestCase {
         let result = PetEdgeSnap.snapOrigin(for: size, from: origin, enabled: true)
         XCTAssertEqual(result.edge, .left)
     }
+
+    func testNearRightEdgeSnaps() throws {
+        guard let screen = NSScreen.screens.first else {
+            throw XCTSkip("No screen available")
+        }
+        let size = CGSize(width: 56, height: 56)
+        let visible = screen.visibleFrame
+        let origin = CGPoint(x: visible.maxX - size.width - 8, y: visible.midY)
+        let result = PetEdgeSnap.snapOrigin(for: size, from: origin, enabled: true)
+        XCTAssertEqual(result.edge, .right)
+    }
 }

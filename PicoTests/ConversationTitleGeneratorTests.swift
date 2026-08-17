@@ -20,4 +20,11 @@ final class ConversationTitleGeneratorTests: XCTestCase {
         XCTAssertFalse(title.hasSuffix(" "))
         XCTAssertTrue(input.hasPrefix(title) || title.split(separator: " ").count >= 1)
     }
+
+    func testNewlinesCollapsedToSpaces() {
+        XCTAssertEqual(
+            ConversationTitleGenerator.title(from: "Hello\nthere"),
+            "Hello there"
+        )
+    }
 }

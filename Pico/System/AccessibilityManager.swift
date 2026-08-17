@@ -3,7 +3,15 @@ import AppKit
 import Foundation
 
 @MainActor
-final class AccessibilityManager {
+protocol AccessibilityProviding: AnyObject {
+    var isTrusted: Bool { get }
+    func selectedText() -> String?
+    func selectedTextRect() -> CGRect?
+    func setSelectedText(_ text: String) -> Bool
+}
+
+@MainActor
+final class AccessibilityManager: AccessibilityProviding {
     var isTrusted: Bool {
         AXIsProcessTrusted()
     }

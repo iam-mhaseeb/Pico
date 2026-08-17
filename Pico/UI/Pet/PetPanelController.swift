@@ -400,27 +400,28 @@ final class PetPanelController {
 
     private static func makeContextMenu(coordinator: AppCoordinator?) -> NSMenu {
         let menu = NSMenu()
+        menu.autoenablesItems = false
         let paused = coordinator?.isPaused == true
         let ask = Self.item("Ask Pico") { coordinator?.showAssistant() }
-        ask.isEnabled = !paused
+        ask.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(ask)
         let text = Self.item("Text Actions") { coordinator?.showTextActions() }
-        text.isEnabled = !paused
+        text.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(text)
         menu.addItem(Self.item("History") { coordinator?.showHistory() })
         menu.addItem(.separator())
         let pet = Self.item("Pet Pico") { coordinator?.handlePetGesture() }
-        pet.isEnabled = !paused
+        pet.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(pet)
         let feed = Self.item("Feed Pico") { coordinator?.handleFeedGesture() }
-        feed.isEnabled = !paused
+        feed.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(feed)
         let shoo = Self.item("Shoo Pico") { coordinator?.handleShooGesture() }
-        shoo.isEnabled = !paused
+        shoo.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(shoo)
         menu.addItem(.separator())
         menu.addItem(Self.item("Settings") { coordinator?.showSettings() })
-        let pauseTitle = paused ? "Resume Pico" : "Pause Pico"
+        let pauseTitle = PicoMenuLayout.pauseTitle(isPaused: paused)
         menu.addItem(Self.item(pauseTitle) { coordinator?.togglePause() })
         menu.addItem(Self.item("Quit Pico") { coordinator?.quit() })
         return menu
