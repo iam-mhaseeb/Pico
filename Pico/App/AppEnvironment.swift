@@ -10,6 +10,7 @@ final class AppEnvironment {
     let textProcessor: TextProcessor
     let conversationStore: ConversationStore
     let modelContainer: ModelContainer
+    let screenAgent: ScreenAgent
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -23,6 +24,7 @@ final class AppEnvironment {
             aiService: aiService
         )
         let conversationStore = ConversationStore(modelContext: modelContainer.mainContext)
+        let screenAgent = ScreenAgent()
 
         self.aiService = aiService
         self.accessibilityManager = accessibilityManager
@@ -30,5 +32,7 @@ final class AppEnvironment {
         self.hotkeyManager = hotkeyManager
         self.textProcessor = textProcessor
         self.conversationStore = conversationStore
+        self.screenAgent = screenAgent
+        ScreenRuntime.agent = screenAgent
     }
 }

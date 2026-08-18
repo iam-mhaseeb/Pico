@@ -15,11 +15,16 @@ final class AIService {
         await provider.availability()
     }
 
-    func ask(prompt: String, conversationID: UUID?) -> AsyncThrowingStream<String, Error> {
+    func ask(
+        prompt: String,
+        conversationID: UUID?,
+        screenContext: String? = nil
+    ) -> AsyncThrowingStream<String, Error> {
         provider.stream(
             prompt: prompt,
             sessionID: conversationID,
-            instructions: PromptTemplates.askPersonality
+            instructions: PromptTemplates.askPersonality,
+            extraContext: screenContext
         )
     }
 

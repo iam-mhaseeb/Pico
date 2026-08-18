@@ -11,9 +11,15 @@ final class AssistantViewModel {
     var errorMessage: String?
     var conversationID: UUID?
     var conversationTitle = "New conversation"
+    /// Explicit eye-toggle in Ask Pico. Also auto-on when the prompt asks for screen help.
+    var lookAtScreen = false
+    var screenStatus: String?
+    var screenPermissionNeeded = false
+    var screenAccessibilityNeeded = false
 
     private let aiService: AIService
     private let store: ConversationStore?
+    private let screenAgent: ScreenAgent?
     private var activeConversation: Conversation?
     private var streamingMessageID: UUID?
     private var sendTask: Task<Void, Never>?
@@ -22,9 +28,17 @@ final class AssistantViewModel {
 
     var onPetState: ((PetState) -> Void)?
 
-    init(aiService: AIService, store: ConversationStore?) {
+    var headerPetState: PetState {
+        if isSending {
+            return screenAgent?.isActing == true ? .working : .thinking
+        }
+        return .listening
+    }
+
+    init(aiService: AIService, store: ConversationStore?, screenAgent: ScreenAgent? = nil) {
         self.aiService = aiService
         self.store = store
+        self.screenAgent = screenAgent
     }
 
     func newConversation() {
@@ -40,6 +54,11 @@ final class AssistantViewModel {
         input = ""
         lastUserPrompt = nil
         sendTask = nil
+        lookAtScreen = false
+        screenStatus = nil
+        screenPermissionNeeded = false
+        screenAccessibilityNeeded = false
+        screenAgent?.resetSession()
     }
 
     func load(conversation: Conversation) {
@@ -108,10 +127,28 @@ final class AssistantViewModel {
         lastUserPrompt = prompt
         errorMessage = nil
         isSending = true
-        onPetState?(.thinking)
+        screenPermissionNeeded = false
+        screenAccessibilityNeeded = false
+
+        let askedForScreen = lookAtScreen || ScreenIntent.requestsScreenHelp(prompt)
+        if askedForScreen || screenAgent?.sessionEnabled == true {
+            screenAgent?.beginTurn(enabled: true)
+        } else {
+            screenAgent?.beginTurn(enabled: false)
+        }
+        onPetState?(askedForScreen ? .working : .thinking)
 
         sendTask = Task {
             do {
+                var screenContext: String?
+                if askedForScreen, let screenAgent {
+                    screenContext = await screenAgent.look()
+                    screenStatus = screenAgent.statusText
+                    screenPermissionNeeded = screenAgent.permissionNeeded
+                    screenAccessibilityNeeded = screenAgent.accessibilityNeeded
+                    onPetState?(.thinking)
+                }
+
                 if conversationID == nil {
                     let conversation = try store?.createConversation(
                         firstUserMessage: prompt,
@@ -151,7 +188,11 @@ final class AssistantViewModel {
                 messages.append(ChatMessage(id: assistantID, role: "assistant", content: "", isStreaming: true))
 
                 streamSaveCounter = 0
-                let stream = aiService.ask(prompt: prompt, conversationID: conversationID)
+                let stream = aiService.ask(
+                    prompt: prompt,
+                    conversationID: conversationID,
+                    screenContext: screenContext
+                )
                 for try await partial in stream {
                     guard !Task.isCancelled else { break }
                     if let index = messages.firstIndex(where: { $0.id == assistantID }) {
@@ -175,6 +216,7 @@ final class AssistantViewModel {
                 isSending = false
                 streamingMessageID = nil
                 sendTask = nil
+                finishScreenTurn()
                 onPetState?(.success)
             } catch let error as AIError where error == .cancelled {
                 await cleanupCancelledStream()
@@ -188,6 +230,7 @@ final class AssistantViewModel {
                 isSending = false
                 streamingMessageID = nil
                 sendTask = nil
+                finishScreenTurn()
                 errorMessage = (error as? LocalizedError)?.errorDescription ?? AIError.generationFailed.localizedDescription
                 // Provider resets the session on failure — re-seed remaining turns.
                 if let conversationID {
@@ -231,6 +274,16 @@ final class AssistantViewModel {
                 conversationID: conversationID,
                 messages: messages.map { ($0.role, $0.content) }
             )
+        }
+        finishScreenTurn()
+    }
+
+    private func finishScreenTurn() {
+        screenAgent?.endTurn()
+        if let screenAgent {
+            screenStatus = screenAgent.statusText
+            screenPermissionNeeded = screenAgent.permissionNeeded
+            screenAccessibilityNeeded = screenAgent.accessibilityNeeded
         }
     }
 }

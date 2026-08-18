@@ -80,9 +80,21 @@ struct SettingsView: View {
                     Text("On-device AI").tag("mac_local")
                 }
                 .disabled(true)
-                Text("When using on-device AI, your text stays on your Mac.")
+                Text("When using on-device AI, your text and screen contents stay on your Mac.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Screen help") {
+                Text("Ask Pico to look at your screen or click something, or turn on Look in the Ask panel. Pico captures the display on-device and never uploads it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Screen Recording settings…") {
+                    PermissionOpener.requestScreenRecordingAccessAndOpenSettings()
+                }
+                Button("Accessibility settings…") {
+                    PermissionOpener.requestAccessibilityAccessAndOpenSettings()
+                }
             }
 
             Section("History") {
@@ -94,7 +106,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 420, height: 560)
+        .frame(width: 420, height: 640)
         .onAppear {
             launchAtLogin = LaunchAtLoginManager.isEnabled
             if LaunchAtLoginManager.requiresApproval {

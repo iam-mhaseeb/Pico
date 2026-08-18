@@ -14,7 +14,7 @@ struct ChatView: View {
                             PetFaceView(state: .listening, size: 44)
                             Text("What can I help with?")
                                 .font(.title3.weight(.semibold))
-                            Text("Ask Pico anything from anywhere on your Mac.")
+                            Text("Ask Pico anything from anywhere on your Mac. Turn on Look, or ask me to click what’s on screen.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)

@@ -10,6 +10,7 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
     private var streamTasks: [UUID: Task<Void, Never>] = [:]
     private var generateTask: Task<String, Error>?
     private var seededHistories: [UUID: [(role: String, content: String)]] = [:]
+    private let screenTools: [any Tool] = ScreenTools.makeTools()
 
     func availability() async -> Result<Void, AIError> {
         AIAvailability.map(SystemLanguageModel.default.availability)
@@ -19,7 +20,10 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
         lock.lock()
         seededHistories[sessionID] = messages.filter { $0.role == "user" || $0.role == "assistant" }
         // Always recreate so reload doesn't double-append onto a live transcript.
-        sessions[sessionID] = LanguageModelSession(instructions: PromptTemplates.askPersonality)
+        sessions[sessionID] = LanguageModelSession(
+            tools: screenTools,
+            instructions: PromptTemplates.askPersonality
+        )
         lock.unlock()
     }
 
@@ -35,7 +39,8 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
     func stream(
         prompt: String,
         sessionID: UUID?,
-        instructions: String?
+        instructions: String?,
+        extraContext: String?
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -54,9 +59,11 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
                         return
                     }
 
-                    let promptToSend = PromptValidation.promptIncludingHistory(
+                    let screenContext = extraContext
+                    let promptToSend = PromptTemplates.composeAskPrompt(
+                        user: trimmed,
                         history: self.seededHistory(for: sessionID),
-                        prompt: trimmed
+                        screen: screenContext
                     )
 
                     let session: LanguageModelSession
@@ -68,6 +75,7 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
                     } else {
                         // Ephemeral — do not retain in the session map.
                         session = LanguageModelSession(
+                            tools: self.screenTools,
                             instructions: instructions ?? PromptTemplates.askPersonality
                         )
                     }
@@ -175,7 +183,7 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
         if let existing = sessions[key] {
             return existing
         }
-        let created = LanguageModelSession(instructions: instructions)
+        let created = LanguageModelSession(tools: screenTools, instructions: instructions)
         sessions[key] = created
         return created
     }

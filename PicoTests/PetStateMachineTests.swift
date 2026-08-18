@@ -34,6 +34,10 @@ final class PetStateMachineTests: XCTestCase {
             PetStateMachine.resolve(current: .thinking, requested: .celebrating),
             .thinking
         )
+        XCTAssertEqual(
+            PetStateMachine.resolve(current: .working, requested: .love),
+            .working
+        )
     }
 
     func testForceOverridesSessionGuard() {

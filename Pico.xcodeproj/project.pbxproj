@@ -80,6 +80,18 @@
 		F28391AD60E862C846CD9C79 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB4C64BA0BCFE33341E640 /* HistoryView.swift */; };
 		F793C3519E4CD64C15670A70 /* PicoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7397DD7AE2835E9554C9FE2 /* PicoTheme.swift */; };
 		FB381286C318C4CF9B3CF786 /* PromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925089FA20FD9B7CF51D9F70 /* PromptTemplates.swift */; };
+		B10000000000000000000001 /* ScreenIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* ScreenIntent.swift */; };
+		B10000000000000000000002 /* ScreenPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* ScreenPermission.swift */; };
+		B10000000000000000000003 /* ScreenDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* ScreenDescription.swift */; };
+		B10000000000000000000004 /* ScreenKeyPress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* ScreenKeyPress.swift */; };
+		B10000000000000000000005 /* ScreenCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* ScreenCaptureService.swift */; };
+		B10000000000000000000006 /* ScreenOCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* ScreenOCR.swift */; };
+		B10000000000000000000007 /* AccessibilitySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* AccessibilitySnapshot.swift */; };
+		B10000000000000000000008 /* ScreenActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* ScreenActionExecutor.swift */; };
+		B10000000000000000000009 /* ScreenAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* ScreenAgent.swift */; };
+		B10000000000000000000010 /* ScreenTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* ScreenTools.swift */; };
+		B10000000000000000000011 /* ScreenIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* ScreenIntentTests.swift */; };
+		B10000000000000000000012 /* ScreenAgentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ScreenAgentTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,6 +180,18 @@
 		F3110FDAB6D0F502F5AD9727 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		F913A74DBECBC4B8E4120432 /* MacAIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAIProvider.swift; sourceTree = "<group>"; };
 		FD1DD7B01A35523587395AFD /* PetSpeechBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSpeechBubbleView.swift; sourceTree = "<group>"; };
+		A10000000000000000000001 /* ScreenIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenIntent.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* ScreenPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenPermission.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* ScreenDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenDescription.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* ScreenKeyPress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenKeyPress.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* ScreenCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureService.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* ScreenOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenOCR.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* AccessibilitySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilitySnapshot.swift; sourceTree = "<group>"; };
+		A10000000000000000000008 /* ScreenActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenActionExecutor.swift; sourceTree = "<group>"; };
+		A10000000000000000000009 /* ScreenAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAgent.swift; sourceTree = "<group>"; };
+		A10000000000000000000010 /* ScreenTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTools.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* ScreenIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenIntentTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* ScreenAgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAgentTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -195,6 +219,8 @@
 				D216BAD1F9631012C5D30CF0 /* PetStateMachineTests.swift */,
 				1ECCEA049A1E85EA57D99584 /* PromptTemplatesTests.swift */,
 				77E7F321E2F260A97D3FFA56 /* PromptValidationTests.swift */,
+				A10000000000000000000012 /* ScreenAgentTests.swift */,
+				A10000000000000000000011 /* ScreenIntentTests.swift */,
 				7C06E5C4133C89EED37BD738 /* ScreenManagerTests.swift */,
 				AC60F7D486295BEC7540C9A0 /* TextActionMenuViewModelTests.swift */,
 				6B2D69D86BC56862358B8386 /* TextProcessorCaptureTests.swift */,
@@ -253,6 +279,7 @@
 				F913A74DBECBC4B8E4120432 /* MacAIProvider.swift */,
 				925089FA20FD9B7CF51D9F70 /* PromptTemplates.swift */,
 				448C809354C1964090689ED6 /* PromptValidation.swift */,
+				A10000000000000000000010 /* ScreenTools.swift */,
 			);
 			path = AI;
 			sourceTree = "<group>";
@@ -381,6 +408,7 @@
 			children = (
 				6096FFE8410796F537336705 /* AI */,
 				6E72BE406ED69170638A34B8 /* Conversations */,
+				A10000000000000000000020 /* Screen */,
 				426F01C65234E7C06A788294 /* Text */,
 			);
 			path = Core;
@@ -410,6 +438,22 @@
 				C95C0BD6E369F6FC6C9F2BA2 /* PicoTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000020 /* Screen */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000001 /* ScreenIntent.swift */,
+				A10000000000000000000002 /* ScreenPermission.swift */,
+				A10000000000000000000003 /* ScreenDescription.swift */,
+				A10000000000000000000004 /* ScreenKeyPress.swift */,
+				A10000000000000000000005 /* ScreenCaptureService.swift */,
+				A10000000000000000000006 /* ScreenOCR.swift */,
+				A10000000000000000000007 /* AccessibilitySnapshot.swift */,
+				A10000000000000000000008 /* ScreenActionExecutor.swift */,
+				A10000000000000000000009 /* ScreenAgent.swift */,
+			);
+			path = Screen;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -550,6 +594,16 @@
 				F793C3519E4CD64C15670A70 /* PicoTheme.swift in Sources */,
 				FB381286C318C4CF9B3CF786 /* PromptTemplates.swift in Sources */,
 				11D1389824BBF063D5AC4061 /* PromptValidation.swift in Sources */,
+				B10000000000000000000001 /* ScreenIntent.swift in Sources */,
+				B10000000000000000000002 /* ScreenPermission.swift in Sources */,
+				B10000000000000000000003 /* ScreenDescription.swift in Sources */,
+				B10000000000000000000004 /* ScreenKeyPress.swift in Sources */,
+				B10000000000000000000005 /* ScreenCaptureService.swift in Sources */,
+				B10000000000000000000006 /* ScreenOCR.swift in Sources */,
+				B10000000000000000000007 /* AccessibilitySnapshot.swift in Sources */,
+				B10000000000000000000008 /* ScreenActionExecutor.swift in Sources */,
+				B10000000000000000000009 /* ScreenAgent.swift in Sources */,
+				B10000000000000000000010 /* ScreenTools.swift in Sources */,
 				0BFB62F22BC6BF0603813DA4 /* ScreenManager.swift in Sources */,
 				C766484FF427A78D7E538DC6 /* SettingsView.swift in Sources */,
 				51547DE5FA60E247BE6DDD43 /* TextAction.swift in Sources */,
@@ -579,6 +633,8 @@
 				B47E63167D953628981631FC /* PetStateMachineTests.swift in Sources */,
 				9C70EA58645245140837055A /* PromptTemplatesTests.swift in Sources */,
 				A1C867E00AE741245194EE1B /* PromptValidationTests.swift in Sources */,
+				B10000000000000000000011 /* ScreenIntentTests.swift in Sources */,
+				B10000000000000000000012 /* ScreenAgentTests.swift in Sources */,
 				A6819BBFC35BE2F0A5EA45AE /* ScreenManagerTests.swift in Sources */,
 				3D1828AC42A4C7758B6CB1E7 /* TestModelContainerFactory.swift in Sources */,
 				B6EFFA4E6E3BA9B2F910A45C /* TextActionMenuViewModelTests.swift in Sources */,

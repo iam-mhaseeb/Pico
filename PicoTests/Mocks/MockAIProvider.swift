@@ -17,6 +17,8 @@ final class MockAIProvider: AIProvider, @unchecked Sendable {
     var droppedSessionIDs: [UUID] = []
     var seededHistories: [(UUID, [(role: String, content: String)])] = []
     var activeSessionIDs: Set<UUID> = []
+    var lastPrompts: [String] = []
+    var lastExtraContext: String?
 
     private func withLock<T>(_ body: () -> T) -> T {
         lock.lock()
@@ -31,10 +33,15 @@ final class MockAIProvider: AIProvider, @unchecked Sendable {
     func stream(
         prompt: String,
         sessionID: UUID?,
-        instructions: String?
+        instructions: String?,
+        extraContext: String?
     ) -> AsyncThrowingStream<String, Error> {
         let chunks = withLock { streamChunks }
         let error = withLock { streamError }
+        withLock {
+            lastPrompts.append(prompt)
+            lastExtraContext = extraContext
+        }
         if let sessionID {
             withLock { activeSessionIDs.insert(sessionID) }
         }

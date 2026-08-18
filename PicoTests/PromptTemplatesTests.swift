@@ -21,5 +21,21 @@ final class PromptTemplatesTests: XCTestCase {
     func testAskPersonalityMentionsOnDevice() {
         XCTAssertTrue(PromptTemplates.askPersonality.lowercased().contains("on-device"))
         XCTAssertTrue(PromptTemplates.askPersonality.contains("Pico"))
+        XCTAssertTrue(PromptTemplates.askPersonality.contains("lookAtScreen"))
+    }
+
+    func testComposeAskPromptIncludesScreenAndHistory() {
+        let composed = PromptTemplates.composeAskPrompt(
+            user: "Click submit",
+            history: [("user", "Hi"), ("assistant", "Hello")],
+            screen: "APP: Safari"
+        )
+        XCTAssertTrue(composed.contains("Previous conversation:"))
+        XCTAssertTrue(composed.contains("APP: Safari"))
+        XCTAssertTrue(composed.contains("User:\nClick submit"))
+        XCTAssertEqual(
+            PromptTemplates.composeAskPrompt(user: "Hi", history: nil, screen: nil),
+            "Hi"
+        )
     }
 }

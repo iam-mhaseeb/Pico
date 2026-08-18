@@ -4,7 +4,7 @@
 
 Pico is a native macOS accessory app: a quiet desktop mascot + menu bar utility with two core flows:
 
-1. **Ask Pico** — press `⌥ Space` from anywhere and chat with on-device Apple Intelligence.
+1. **Ask Pico** — press `⌥ Space` from anywhere and chat with on-device Apple Intelligence. Ask it to look at your screen or click something when you need hands-on help.
 2. **Text Actions** — select text, press `⌥ ⇧ Space`, preview a rewrite, then Insert.
 
 ## Requirements
@@ -12,12 +12,14 @@ Pico is a native macOS accessory app: a quiet desktop mascot + menu bar utility 
 - macOS 26.0+
 - Xcode 26+
 - Apple Intelligence enabled for on-device AI
-- Accessibility permission for system-wide text actions
+- Accessibility permission for system-wide text actions and UI clicks
+- Screen Recording permission to look at the display (only when you ask)
 
 ## Features (v1)
 
 - Local-first AI via Apple Foundation Models (no account, no API key, no cloud required)
 - Floating assistant with streaming responses and markdown
+- **Look at screen** — when you ask (or tap Look), Pico captures the display on-device, reads the UI, and can click, type, or press keys
 - Conversation history (SwiftData)
 - System-wide text actions: Rewrite, Fix grammar, Professional, Casual, Shorter, Improve
 - Desktop mascot with idle / listening / thinking / success / error states
@@ -53,7 +55,7 @@ xcodebuild -scheme Pico -configuration Debug build
 
 ## Privacy
 
-When using on-device AI, your text stays on your Mac. Pico v1 has no backend, no analytics, and does not log prompts or responses.
+When using on-device AI, your text stays on your Mac. Screen captures are processed on-device, are not stored in conversation history, and are not uploaded. Pico v1 has no backend, no analytics, and does not log prompts or responses.
 
 ## Compatibility checklist
 

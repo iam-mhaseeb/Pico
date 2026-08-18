@@ -151,15 +151,18 @@ struct OnboardingView: View {
 
     private var permissionsPage: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Accessibility access")
+            Text("A couple of permissions")
                 .font(.title2.weight(.semibold))
-            Text("To help with selected text, Pico needs Accessibility access.")
+            Text("Accessibility lets Pico improve selected text and click things you ask it to.")
                 .foregroundStyle(.secondary)
-            Text("This allows Pico to read and replace selected text. When using local AI, your text stays on your Mac.")
+            Text("Screen Recording lets Pico see what’s on your display — only when you ask, and only on this Mac.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button("Open Settings") {
+            Button("Open Accessibility Settings") {
                 PermissionOpener.requestAccessibilityAccessAndOpenSettings()
+            }
+            Button("Open Screen Recording Settings") {
+                PermissionOpener.requestScreenRecordingAccessAndOpenSettings()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

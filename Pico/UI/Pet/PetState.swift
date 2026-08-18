@@ -47,7 +47,7 @@ enum PetState: String, Sendable, Equatable, CaseIterable {
 /// Lightweight transition helper shared by pet UI and panel controller.
 enum PetStateMachine {
     /// States Ask Pico / Text Actions may drive.
-    static let sessionStates: Set<PetState> = [.listening, .thinking, .success, .error]
+    static let sessionStates: Set<PetState> = [.listening, .thinking, .working, .success, .error]
 
     /// Whether `from` may move to `to` without an explicit force.
     static func canTransition(from: PetState, to: PetState) -> Bool {

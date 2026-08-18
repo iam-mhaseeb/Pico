@@ -32,5 +32,9 @@
 	<false/>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Pico looks at your screen on this Mac when you ask it to help with what’s in front of you. Nothing is uploaded.</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>Pico uses Accessibility to read and replace selected text, and to click or type when you ask it to.</string>
 </dict>
 </plist>

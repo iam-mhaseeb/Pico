@@ -32,6 +32,14 @@ final class AppCoordinator {
         petPanel.attach(coordinator: self)
         menuBar.attach(coordinator: self)
 
+        environment.screenAgent.hideChrome = { [weak self] in
+            self?.assistantPanel?.orderOut(nil)
+            self?.historyPanel?.orderOut(nil)
+        }
+        environment.screenAgent.restoreChrome = { [weak self] in
+            self?.assistantPanel?.makeKeyAndOrderFrontActivating()
+        }
+
         environment.hotkeyManager.onAsk = { [weak self] in
             self?.toggleAssistant()
         }
@@ -94,9 +102,14 @@ final class AppCoordinator {
             return
         }
 
+        if assistantPanel?.isVisible != true {
+            environment.screenAgent.rememberTargetApp()
+        }
+
         let viewModel = assistantViewModel ?? AssistantViewModel(
             aiService: environment.aiService,
-            store: environment.conversationStore
+            store: environment.conversationStore,
+            screenAgent: environment.screenAgent
         )
         viewModel.onPetState = { [weak self] state in
             self?.setPetState(state)
@@ -264,7 +277,7 @@ final class AppCoordinator {
     func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 640),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
