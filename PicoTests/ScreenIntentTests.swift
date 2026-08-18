@@ -48,6 +48,15 @@ final class ScreenDescriptionTests: XCTestCase {
         XCTAssertTrue(snapshot.node(matching: "Password")?.secure == true)
     }
 
+    func testInteractiveRolesUseStringNamesIncludingLink() {
+        XCTAssertTrue(AXRoleName.isInteractive("AXLink"))
+        XCTAssertTrue(AXRoleName.isInteractive("AXButton"))
+        XCTAssertTrue(AXRoleName.isInteractive("AXSecureTextField"))
+        XCTAssertTrue(AXRoleName.isReadableText("AXHeading"))
+        XCTAssertFalse(AXRoleName.isInteractive("AXGroup"))
+        XCTAssertFalse(AXRoleName.isReadableText("AXButton"))
+    }
+
     func testComposeIncludesAXAndOCR() {
         let text = ScreenDescription.compose(
             appName: "Notes",

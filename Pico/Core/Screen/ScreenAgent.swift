@@ -197,9 +197,9 @@ final class ScreenAgent {
     }
 
     func typeText(_ text: String, field: String) async -> String {
-        if let error = allowAction() { return error }
         let clipped = String(text.prefix(ScreenActionExecutor.maxTypeCharacters))
         guard !clipped.isEmpty else { return "Nothing to type." }
+        if let error = allowAction() { return error }
 
         if lastSnapshot == nil {
             _ = await look()

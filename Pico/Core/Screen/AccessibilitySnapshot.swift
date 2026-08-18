@@ -10,6 +10,42 @@ struct AXElementMap {
     }
 }
 
+/// AX role names as strings — some `kAX*Role` constants (notably `kAXLinkRole`) are not
+/// exported to Swift on macOS.
+enum AXRoleName {
+    static let interactive: Set<String> = [
+        "AXButton",
+        "AXCheckBox",
+        "AXRadioButton",
+        "AXPopUpButton",
+        "AXMenuButton",
+        "AXTextField",
+        "AXSecureTextField",
+        "AXTextArea",
+        "AXComboBox",
+        "AXLink",
+        "AXMenuItem",
+        "AXTabGroup",
+        "AXSlider",
+        "AXIncrementor",
+        "AXSearchField",
+        "AXTab"
+    ]
+
+    static let readableText: Set<String> = [
+        "AXStaticText",
+        "AXHeading"
+    ]
+
+    static func isInteractive(_ role: String) -> Bool {
+        interactive.contains(role)
+    }
+
+    static func isReadableText(_ role: String) -> Bool {
+        readableText.contains(role)
+    }
+}
+
 @MainActor
 protocol AXSnapshotProviding: AnyObject {
     func snapshot(pid: pid_t, appName: String) -> (AccessibilitySnapshot, AXElementMap)
@@ -75,7 +111,7 @@ final class AccessibilityTreeSnapshotter: AXSnapshotProviding {
 
         let role = stringAttribute(element, kAXRoleAttribute as String) ?? "unknown"
         let title = resolvedTitle(element)
-        let secure = isSecure(element)
+        let secure = isSecure(element, role: role)
         let value = secure ? nil : stringAttribute(element, kAXValueAttribute as String)
         let enabled = boolAttribute(element, kAXEnabledAttribute as String) ?? true
 
@@ -108,32 +144,11 @@ final class AccessibilityTreeSnapshotter: AXSnapshotProviding {
     }
 
     private func shouldInclude(role: String, title: String, value: String?) -> Bool {
-        if isInteractive(role) { return !title.isEmpty || (value?.isEmpty == false) }
-        if role == kAXStaticTextRole as String || role == kAXHeadingRole as String {
+        if AXRoleName.isInteractive(role) { return !title.isEmpty || (value?.isEmpty == false) }
+        if AXRoleName.isReadableText(role) {
             return !title.isEmpty
         }
         return false
-    }
-
-    private func isInteractive(_ role: String) -> Bool {
-        let interactive: Set<String> = [
-            kAXButtonRole as String,
-            kAXCheckBoxRole as String,
-            kAXRadioButtonRole as String,
-            kAXPopUpButtonRole as String,
-            kAXMenuButtonRole as String,
-            kAXTextFieldRole as String,
-            kAXTextAreaRole as String,
-            kAXComboBoxRole as String,
-            kAXLinkRole as String,
-            kAXMenuItemRole as String,
-            kAXTabGroupRole as String,
-            kAXSliderRole as String,
-            kAXIncrementorRole as String,
-            "AXSearchField",
-            "AXTab"
-        ]
-        return interactive.contains(role)
     }
 
     private func resolvedTitle(_ element: AXUIElement) -> String {
@@ -152,12 +167,10 @@ final class AccessibilityTreeSnapshotter: AXSnapshotProviding {
         return ""
     }
 
-    private func isSecure(_ element: AXUIElement) -> Bool {
-        if stringAttribute(element, kAXRoleAttribute as String) == "AXSecureTextField" {
-            return true
-        }
+    private func isSecure(_ element: AXUIElement, role: String) -> Bool {
+        if role == "AXSecureTextField" { return true }
         if let subrole = stringAttribute(element, kAXSubroleAttribute as String),
-           subrole == kAXSecureTextFieldSubrole as String || subrole == "AXSecureTextField" {
+           subrole == "AXSecureTextField" {
             return true
         }
         return false

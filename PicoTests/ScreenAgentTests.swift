@@ -148,6 +148,17 @@ final class ScreenAgentTests: XCTestCase {
         XCTAssertEqual(actions.typed, ["hello"])
     }
 
+    func testEmptyTypeTextDoesNotConsumeActionBudget() async {
+        agent.beginTurn(enabled: true)
+        for _ in 0..<ScreenAgent.maxActionsPerTurn {
+            let result = await agent.typeText("", field: "")
+            XCTAssertEqual(result, "Nothing to type.")
+        }
+        let ok = await agent.clickAt(x: 0.2, y: 0.2)
+        XCTAssertTrue(ok.contains("Clicked"))
+        XCTAssertEqual(actions.clicks.count, 1)
+    }
+
     func testActionLimit() async {
         agent.beginTurn(enabled: true)
         for _ in 0..<ScreenAgent.maxActionsPerTurn {

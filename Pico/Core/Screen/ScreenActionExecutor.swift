@@ -44,7 +44,7 @@ final class ScreenActionExecutor: ScreenActing {
         if AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole) == .success,
            let subrole,
            let text = subrole as? String,
-           text == (kAXSecureTextFieldSubrole as String) || text == "AXSecureTextField" {
+           text == "AXSecureTextField" {
             return true
         }
         return false
