@@ -1,4 +1,4 @@
-# Xcode
+# Xcode / build
 DerivedData/
 build/
 *.xcuserstate
@@ -10,6 +10,7 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+*.app
 
 # macOS
 .DS_Store
@@ -35,11 +36,28 @@ Package.resolved
 Pods/
 Carthage/Build/
 
-# IDEs
+# IDEs / editors
 .idea/
+.vscode/
 *.swp
 *~
+*.xcresult
 
-# Plans / local
+# Secrets / local env
+.env
+.env.*
+*.pem
+*.p12
+*.mobileprovision
+GoogleService-Info.plist
+Secrets.xcconfig
+
+# Plans / agent / local tooling
 .cursor/
+.agents/
 *.plan.md
+
+# Archives / exports
+*.zip
+*.dmg
+*.pkg

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/iam-mhaseeb/Pico/security/advisories/new
+    about: Please report vulnerabilities privately — do not file a public issue.
+  - name: Ask a question
+    url: https://github.com/iam-mhaseeb/Pico/issues/new?labels=question
+    about: Use a normal issue if Discussions are not enabled yet.
