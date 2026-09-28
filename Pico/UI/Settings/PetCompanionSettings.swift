@@ -91,7 +91,7 @@ struct PetCompanionSettings: View {
                 .foregroundStyle(.secondary)
             Toggle("Cursor curiosity", isOn: $settings.chaseEnabled)
                 .onChange(of: settings.chaseEnabled) { _, _ in save() }
-            Text("Occasionally peeks toward the pointer. Rate-limited, and off during Ghost Mode, Focus Blocks, and Pause.")
+            Text("Occasionally peeks toward the pointer while Pico is up, including during hobbies. Quiet during Ghost Mode, Focus Blocks, night hours, and Pause.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Toggle("Toys", isOn: $settings.toysEnabled)

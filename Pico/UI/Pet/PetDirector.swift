@@ -68,12 +68,16 @@ final class PetDirector {
     }
 
     func updateSettings(_ incoming: PetStoredSettings) {
+        let toysWereEnabled = settings.toysEnabled
         var merged = incoming
         merged.stats = settings.stats
         merged.progression = settings.progression
         merged.usage = settings.usage
         merged.lastStretchDay = settings.lastStretchDay
         settings = merged
+        if toysWereEnabled, !settings.toysEnabled {
+            clearToys()
+        }
         PetStore.save(settings)
         scheduleTimer()
         publishSnapshot()

@@ -35,8 +35,12 @@ final class PetStateMachineTests: XCTestCase {
             .thinking
         )
         XCTAssertEqual(
-            PetStateMachine.resolve(current: .working, requested: .love),
-            .working
+            PetStateMachine.resolve(current: .working, requested: .sleeping),
+            .sleeping
+        )
+        XCTAssertEqual(
+            PetStateMachine.resolve(current: .working, requested: .curious),
+            .curious
         )
     }
 
