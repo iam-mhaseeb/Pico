@@ -98,6 +98,64 @@ final class PetBehaviorTests: XCTestCase {
         XCTAssertFalse(PetChase.shouldChase(
             enabled: true, suppressed: false, idle: 40, now: now, cooldownUntil: .distantPast, roll: 0.9
         ))
+        XCTAssertEqual(PetChase.rollInterval, 20, accuracy: 0.1)
+        XCTAssertGreaterThanOrEqual(PetChase.cooldown, 180)
+    }
+
+    func testLocomotionPrefersToysThenChaseThenWander() {
+        XCTAssertEqual(PetLocomotion.choose(hasToys: true, wanderEnabled: true, chaseRollAllowed: true), .toy)
+        XCTAssertEqual(PetLocomotion.choose(hasToys: false, wanderEnabled: true, chaseRollAllowed: true), .chase)
+        XCTAssertEqual(PetLocomotion.choose(hasToys: false, wanderEnabled: true, chaseRollAllowed: false), .wander)
+        XCTAssertEqual(PetLocomotion.choose(hasToys: false, wanderEnabled: false, chaseRollAllowed: false), .none)
+        XCTAssertTrue(PetIdle.allowsLocomotion(.awake))
+        XCTAssertTrue(PetIdle.allowsLocomotion(.hobby(.reading)))
+        XCTAssertFalse(PetIdle.allowsLocomotion(.sleeping))
+        XCTAssertFalse(PetIdle.allowsLocomotion(.suppressed))
+    }
+
+    func testSpeechChromeKeepsThePetFacePut() {
+        let pet: CGFloat = 56
+        let bubble: CGFloat = 120
+        let slot: CGFloat = 34
+        let face = CGPoint(x: 200, y: 80)
+        let origin = PetChromeLayout.panelOrigin(
+            faceOrigin: face,
+            petSize: pet,
+            chromeWidth: bubble,
+            bubbleSlot: slot,
+            showsChrome: true,
+            bubbleBelow: false
+        )
+        let panel = CGRect(x: origin.x, y: origin.y, width: bubble, height: pet + slot)
+        let recovered = PetChromeLayout.faceOrigin(panel: panel, petSize: pet, bubbleBelow: false)
+        XCTAssertEqual(recovered.x, face.x, accuracy: 0.1)
+        XCTAssertEqual(recovered.y, face.y, accuracy: 0.1)
+
+        let again = PetChromeLayout.panelOrigin(
+            faceOrigin: recovered,
+            petSize: pet,
+            chromeWidth: bubble,
+            bubbleSlot: slot,
+            showsChrome: true,
+            bubbleBelow: false
+        )
+        XCTAssertEqual(again.x, origin.x, accuracy: 0.1)
+        XCTAssertEqual(again.y, origin.y, accuracy: 0.1)
+
+        let below = PetChromeLayout.panelOrigin(
+            faceOrigin: face,
+            petSize: pet,
+            chromeWidth: bubble,
+            bubbleSlot: slot,
+            showsChrome: true,
+            bubbleBelow: true
+        )
+        let belowPanel = CGRect(x: below.x, y: below.y, width: bubble, height: pet + slot)
+        let belowFace = PetChromeLayout.faceOrigin(panel: belowPanel, petSize: pet, bubbleBelow: true)
+        XCTAssertEqual(belowFace.x, face.x, accuracy: 0.1)
+        XCTAssertEqual(belowFace.y, face.y, accuracy: 0.1)
+        XCTAssertTrue(PetChromeLayout.shouldPlaceBubbleBelow(faceMaxY: 790, screenMaxY: 800, bubbleSlot: slot))
+        XCTAssertFalse(PetChromeLayout.shouldPlaceBubbleBelow(faceMaxY: 400, screenMaxY: 800, bubbleSlot: slot))
     }
 
     func testWanderStaysInVisibleFrameAndFlips() {
@@ -204,6 +262,12 @@ final class PetBehaviorTests: XCTestCase {
         usage = UsageCounters(ask: 6, text: 1, play: 1)
         XCTAssertEqual(usage.trait, .chatter)
         XCTAssertLessThan(UsageTrait.scholar.wanderSpeedMultiplier, UsageTrait.balanced.wanderSpeedMultiplier)
+    }
+
+    func testBatteryPowerState() {
+        XCTAssertTrue(PowerSource.isBatteryPower("Battery Power"))
+        XCTAssertFalse(PowerSource.isBatteryPower("AC Power"))
+        XCTAssertFalse(PowerSource.isBatteryPower(nil))
     }
 
     func testPerformanceAndSoundPolicies() {

@@ -19,6 +19,7 @@ final class DraggablePetContainer: NSView {
     private var singleClickWorkItem: DispatchWorkItem?
     private var longPressWorkItem: DispatchWorkItem?
     private var didLongPress = false
+    private var pointerConsumed = false
     private let dragThreshold: CGFloat = 3
     private let longPressDelay: TimeInterval = 0.45
 
@@ -134,11 +135,14 @@ final class DraggablePetContainer: NSView {
         guard window != nil else { return }
         if event.modifierFlags.contains(.control) {
             cancelPendingClicks()
+            // Menu tracking can still deliver mouseUp. Swallow it so the click is not also a pet.
+            pointerConsumed = true
             if let menu = menuBuilder?() {
                 NSMenu.popUpContextMenu(menu, with: event, for: self)
             }
             return
         }
+        pointerConsumed = false
         mouseDownScreenPoint = NSEvent.mouseLocation
         windowOriginAtMouseDown = window?.frame.origin
         isDragging = false
@@ -184,6 +188,11 @@ final class DraggablePetContainer: NSView {
         }
 
         cancelLongPress()
+
+        if pointerConsumed {
+            pointerConsumed = false
+            return
+        }
 
         if isDragging {
             isDragging = false

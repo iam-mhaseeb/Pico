@@ -312,7 +312,9 @@ struct PetView: View {
             }
         }
         .frame(
-            width: max(PicoTheme.petSize, PicoTheme.petBubbleSize),
+            width: (bubbleText == nil && toastText == nil)
+                ? PicoTheme.petSize
+                : max(PicoTheme.petSize, PicoTheme.petBubbleSize),
             height: PicoTheme.petSize + (bubbleText == nil && toastText == nil ? 0 : PetPanelController.bubbleSlotHeight),
             alignment: bubbleBelow ? .top : .bottom
         )

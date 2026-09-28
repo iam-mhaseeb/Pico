@@ -40,16 +40,15 @@ final class PetPanelController {
     /// Frame of the pet face itself (excludes bubble slot).
     var petFaceFrame: NSRect? {
         guard let panel else { return nil }
-        let width = PicoTheme.petSize
-        let height = PicoTheme.petSize
-        let x = panel.frame.midX - width / 2
-        let y: CGFloat
-        if showsChrome, bubbleBelow {
-            y = panel.frame.maxY - height
-        } else {
-            y = panel.frame.minY
-        }
-        return NSRect(x: x, y: y, width: width, height: height)
+        let origin = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: showsChrome && bubbleBelow
+        )
+        return NSRect(
+            origin: origin,
+            size: NSSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
+        )
     }
 
     func attach(coordinator: AppCoordinator) {
@@ -206,13 +205,14 @@ final class PetPanelController {
 
     private func panelOrigin(forFaceOrigin faceOrigin: CGPoint) -> CGPoint {
         let width = showsChrome ? max(PicoTheme.petSize, PicoTheme.petBubbleSize) : PicoTheme.petSize
-        if showsChrome, bubbleBelow {
-            return CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y - Self.bubbleSlotHeight)
-        }
-        if showsChrome {
-            return CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y)
-        }
-        return faceOrigin
+        return PetChromeLayout.panelOrigin(
+            faceOrigin: faceOrigin,
+            petSize: PicoTheme.petSize,
+            chromeWidth: width,
+            bubbleSlot: Self.bubbleSlotHeight,
+            showsChrome: showsChrome,
+            bubbleBelow: bubbleBelow
+        )
     }
 
     func setGhosted(_ ghosted: Bool, animated: Bool = true) {
@@ -298,19 +298,7 @@ final class PetPanelController {
     }
 
     func persistPosition() {
-        guard let panel else { return }
-        // Persist the pet-face origin (bottom-left of the face), not bubble chrome.
-        let faceOrigin: CGPoint
-        if showsChrome, !bubbleBelow {
-            faceOrigin = panel.frame.origin
-        } else if showsChrome, bubbleBelow {
-            faceOrigin = CGPoint(
-                x: panel.frame.origin.x,
-                y: panel.frame.maxY - PicoTheme.petSize
-            )
-        } else {
-            faceOrigin = panel.frame.origin
-        }
+        guard let panel, let faceOrigin = petFaceFrame?.origin else { return }
         let screen = panel.screen ?? ScreenManager.primaryScreen
         UserDefaults.standard.set(faceOrigin.x, forKey: PreferenceKey.petOriginX)
         UserDefaults.standard.set(faceOrigin.y, forKey: PreferenceKey.petOriginY)
@@ -329,12 +317,7 @@ final class PetPanelController {
         let snapEnabled = defaults.object(forKey: PreferenceKey.petEdgeSnapEnabled) as? Bool ?? true
         // Snap using the pet-face footprint so speech-bubble chrome doesn't skew docking.
         let faceSize = CGSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
-        let faceOrigin: CGPoint = {
-            if showsChrome, bubbleBelow {
-                return CGPoint(x: panel.frame.origin.x, y: panel.frame.maxY - PicoTheme.petSize)
-            }
-            return panel.frame.origin
-        }()
+        let faceOrigin = petFaceFrame?.origin ?? panel.frame.origin
         let result = PetEdgeSnap.snapOrigin(
             for: faceSize,
             from: faceOrigin,
@@ -458,37 +441,38 @@ final class PetPanelController {
             return
         }
         let screen = panel.screen ?? ScreenManager.primaryScreen
-        let faceTop = panel.frame.minY + PicoTheme.petSize
-        let spaceAbove = screen.visibleFrame.maxY - faceTop
-        bubbleBelow = spaceAbove < Self.bubbleSlotHeight + 8
+        let face = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: bubbleBelow
+        )
+        bubbleBelow = PetChromeLayout.shouldPlaceBubbleBelow(
+            faceMaxY: face.y + PicoTheme.petSize,
+            screenMaxY: screen.visibleFrame.maxY,
+            bubbleSlot: Self.bubbleSlotHeight
+        )
     }
 
     private func relayoutForSpeech() {
         guard let panel else { return }
-        let faceOrigin: CGPoint = {
-            if showsChrome || panel.frame.height > PicoTheme.petSize + 1 {
-                // Derive face origin from current layout.
-                if panel.frame.height > PicoTheme.petSize + 1 {
-                    if bubbleBelow {
-                        return CGPoint(x: panel.frame.origin.x, y: panel.frame.maxY - PicoTheme.petSize)
-                    }
-                    return panel.frame.origin
-                }
-            }
-            return panel.frame.origin
-        }()
+        let faceOrigin = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: bubbleBelow
+        )
 
         let hasBubble = showsChrome
-        let width = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
+        let chromeWidth = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
+        let width = hasBubble ? chromeWidth : PicoTheme.petSize
         let height = PicoTheme.petSize + (hasBubble ? Self.bubbleSlotHeight : 0)
-        let origin: CGPoint
-        if hasBubble, bubbleBelow {
-            origin = CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y - Self.bubbleSlotHeight)
-        } else if hasBubble {
-            origin = CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y)
-        } else {
-            origin = faceOrigin
-        }
+        let origin = PetChromeLayout.panelOrigin(
+            faceOrigin: faceOrigin,
+            petSize: PicoTheme.petSize,
+            chromeWidth: chromeWidth,
+            bubbleSlot: Self.bubbleSlotHeight,
+            showsChrome: hasBubble,
+            bubbleBelow: bubbleBelow
+        )
         panel.setFrame(NSRect(origin: origin, size: NSSize(width: width, height: height)), display: true)
         container?.frame = NSRect(origin: .zero, size: NSSize(width: width, height: height))
     }

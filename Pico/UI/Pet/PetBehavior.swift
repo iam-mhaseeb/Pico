@@ -95,6 +95,14 @@ enum PetIdle {
         return .awake
     }
 
+    /// Hobbies are still awake enough to wander or peek. Sleep and hard suppression are not.
+    static func allowsLocomotion(_ phase: PetIdlePhase) -> Bool {
+        switch phase {
+        case .awake, .hobby: true
+        case .sleeping, .suppressed: false
+        }
+    }
+
     /// Trait nudges which hobby is shown first; the idle slot still rotates.
     static func hobby(idle: TimeInterval, bias: UsageTrait) -> PetHobby {
         let slot = Int(idle / hobbyAfter) % PetHobby.allCases.count
@@ -226,7 +234,9 @@ struct MoodFlipLimiter {
 
 enum PetChase {
     static let minimumIdle: TimeInterval = 20
-    static let cooldown: TimeInterval = 120
+    static let cooldown: TimeInterval = 180
+    /// How often Pico may even consider a peek. Combined with `chance`, this stays occasional.
+    static let rollInterval: TimeInterval = 20
     static let chance: Double = 0.12
 
     static func shouldChase(
@@ -280,6 +290,60 @@ enum PetWander {
             : visible.minY + margin
         let clampedY = min(max(y, visible.minY + margin), visible.maxY - size.height - margin)
         return (CGPoint(x: x, y: clampedY), nextDirection)
+    }
+}
+
+enum PetLocomotionChoice: Equatable {
+    case toy
+    case chase
+    case wander
+    case none
+}
+
+enum PetLocomotion {
+    /// Toys win. A failed peek roll still allows wandering, so the two toggles stay independent.
+    static func choose(hasToys: Bool, wanderEnabled: Bool, chaseRollAllowed: Bool) -> PetLocomotionChoice {
+        if hasToys { return .toy }
+        if chaseRollAllowed { return .chase }
+        if wanderEnabled { return .wander }
+        return .none
+    }
+}
+
+enum PetChromeLayout {
+    /// Pet-face origin inside a panel that may be wider or taller because of a speech bubble.
+    static func faceOrigin(panel: CGRect, petSize: CGFloat, bubbleBelow: Bool) -> CGPoint {
+        let x = panel.midX - petSize / 2
+        let expanded = panel.height > petSize + 1
+        let y = (expanded && bubbleBelow) ? panel.maxY - petSize : panel.minY
+        return CGPoint(x: x, y: y)
+    }
+
+    static func panelOrigin(
+        faceOrigin: CGPoint,
+        petSize: CGFloat,
+        chromeWidth: CGFloat,
+        bubbleSlot: CGFloat,
+        showsChrome: Bool,
+        bubbleBelow: Bool
+    ) -> CGPoint {
+        if showsChrome, bubbleBelow {
+            return CGPoint(
+                x: faceOrigin.x - (chromeWidth - petSize) / 2,
+                y: faceOrigin.y - bubbleSlot
+            )
+        }
+        if showsChrome {
+            return CGPoint(
+                x: faceOrigin.x - (chromeWidth - petSize) / 2,
+                y: faceOrigin.y
+            )
+        }
+        return faceOrigin
+    }
+
+    static func shouldPlaceBubbleBelow(faceMaxY: CGFloat, screenMaxY: CGFloat, bubbleSlot: CGFloat) -> Bool {
+        screenMaxY - faceMaxY < bubbleSlot + 8
     }
 }
 

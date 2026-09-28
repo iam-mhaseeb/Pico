@@ -4,18 +4,23 @@ import IOKit.ps
 enum PowerSource {
     static func isOnBattery() -> Bool {
         guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return false }
-        guard let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else {
+        guard let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() else {
             return false
         }
-        for source in sources {
+        let listed = sources as NSArray
+        for index in 0..<listed.count {
+            guard let source = listed[index] as? CFTypeRef else { continue }
             guard let description = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue()
                 as? [String: Any]
             else { continue }
-            let state = description[kIOPSPowerSourceStateKey] as? String
-            if state == kIOPSBatteryPowerValue {
+            if isBatteryPower(description[kIOPSPowerSourceStateKey] as? String) {
                 return true
             }
         }
         return false
+    }
+
+    static func isBatteryPower(_ state: String?) -> Bool {
+        state == kIOPSBatteryPowerValue
     }
 }

@@ -38,11 +38,11 @@ final class PetDirector {
     private var lastMood = PetContextMood.idle
     private var lastMoodFlip = Date.distantPast
     private var chaseCooldownUntil = Date.distantPast
+    private var nextChaseRoll = Date.distantPast
     private var wanderDirection: CGFloat = 1
     private var ambientLockedUntil = Date.distantPast
     private var performanceAnchor: Date?
     private var didAnnounceSleep = false
-    private var didMorningStretch = false
     private var toast: String?
     private var lastVisual: PetVisualState?
     private let faceSize = CGSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
@@ -85,7 +85,7 @@ final class PetDirector {
         if interaction != .hover {
             lastInteraction = now
             didAnnounceSleep = false
-        } else if lastApplied == .sleeping {
+        } else if lastApplied == .sleeping, !isSessionBusy(), !isPaused() {
             lastInteraction = now
             didAnnounceSleep = false
             onApplyState?(.curious)
@@ -100,8 +100,16 @@ final class PetDirector {
         let points = PetProgression.points(for: interaction)
         if let unlocked = settings.progression.award(points: points, enabled: settings.xpEnabled) {
             toast = unlocked
+            publishVisual(pauseAnimation: false)
             onSpeech?(unlocked)
             play(.levelUp)
+            let shown = unlocked
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                if self.toast == shown {
+                    self.dismissToast()
+                }
+            }
         }
         if interaction == .shoo || interaction == .drag {
             clearToys()
@@ -235,7 +243,31 @@ final class PetDirector {
 
         guard !suppressed, !focus, !night, !sleeping else { return }
 
-        if !toys.isEmpty, let petOrigin = origin() {
+        let canMove = PetIdle.allowsLocomotion(
+            PetIdle.phase(idle: idle, suppressed: suppressed, night: night)
+        )
+        var chaseRollAllowed = false
+        if canMove, toys.isEmpty, settings.chaseEnabled,
+           now >= nextChaseRoll, idle >= PetChase.minimumIdle, now >= chaseCooldownUntil {
+            nextChaseRoll = now.addingTimeInterval(PetChase.rollInterval)
+            chaseRollAllowed = PetChase.shouldChase(
+                enabled: true,
+                suppressed: false,
+                idle: idle,
+                now: now,
+                cooldownUntil: .distantPast,
+                roll: roll,
+                chanceMultiplier: settings.usage.trait.chaseChanceMultiplier
+            )
+        }
+
+        switch PetLocomotion.choose(
+            hasToys: !toys.isEmpty,
+            wanderEnabled: canMove && settings.wanderEnabled,
+            chaseRollAllowed: chaseRollAllowed
+        ) {
+        case .toy:
+            guard let petOrigin = origin() else { return }
             let target = toys[0].center
             let chased = PetToyChase.step(from: petOrigin, to: target, maxStep: 22)
             onMove?(chased.origin, false)
@@ -248,29 +280,8 @@ final class PetDirector {
                 ambientLockedUntil = now.addingTimeInterval(1.2)
                 onSpeech?(PetSpeechLines.line(for: .feed, persona: settings.persona))
             }
-        } else if phaseAllowsLocomotion(idle: idle, suppressed: suppressed, night: night),
-                  settings.wanderEnabled,
-                  let petOrigin = origin() {
-            let speed = 10 * settings.usage.trait.wanderSpeedMultiplier
-            let stepped = PetWander.step(
-                origin: petOrigin,
-                size: faceSize,
-                visible: visibleFrame(),
-                direction: wanderDirection,
-                speed: speed
-            )
-            wanderDirection = stepped.direction
-            onMove?(stepped.origin, false)
-        } else if phaseAllowsLocomotion(idle: idle, suppressed: suppressed, night: night),
-                  PetChase.shouldChase(
-            enabled: settings.chaseEnabled,
-            suppressed: false,
-            idle: idle,
-            now: now,
-            cooldownUntil: chaseCooldownUntil,
-            roll: roll,
-            chanceMultiplier: settings.usage.trait.chaseChanceMultiplier
-        ), let petOrigin = origin() {
+        case .chase:
+            guard let petOrigin = origin() else { return }
             let cursor = mouseLocation()
             let next = PetChase.peek(from: petOrigin, toward: cursor)
             if next != petOrigin {
@@ -281,6 +292,20 @@ final class PetDirector {
                 ambientLockedUntil = now.addingTimeInterval(1.6)
             }
             chaseCooldownUntil = now.addingTimeInterval(PetChase.cooldown)
+        case .wander:
+            guard let petOrigin = origin() else { return }
+            let speed = 10 * settings.usage.trait.wanderSpeedMultiplier
+            let stepped = PetWander.step(
+                origin: petOrigin,
+                size: faceSize,
+                visible: visibleFrame(),
+                direction: wanderDirection,
+                speed: speed
+            )
+            wanderDirection = stepped.direction
+            onMove?(stepped.origin, false)
+        case .none:
+            break
         }
     }
 
@@ -308,13 +333,6 @@ final class PetDirector {
         PetSoundPlayer.play(event, volume: settings.soundVolume)
     }
 
-    private func phaseAllowsLocomotion(idle: TimeInterval, suppressed: Bool, night: Bool) -> Bool {
-        if case .awake = PetIdle.phase(idle: idle, suppressed: suppressed, night: night) {
-            return true
-        }
-        return false
-    }
-
     private func focusQuiet(at date: Date = Date()) -> Bool {
         FocusSchedule.isQuiet(at: date, blocks: settings.focusBlocks)
     }
@@ -335,8 +353,6 @@ final class PetDirector {
     private func maybeMorningStretch(at date: Date, suppressed: Bool) {
         guard !suppressed else { return }
         guard settings.routine.shouldMorningStretch(at: date, lastStretchDay: settings.lastStretchDay) else { return }
-        guard !didMorningStretch else { return }
-        didMorningStretch = true
         settings.lastStretchDay = DayRoutine.dayKey(date)
         onApplyState?(.love)
         lastApplied = .love

@@ -28,6 +28,7 @@ final class ScreenIntentTests: XCTestCase {
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("How do I impress the interviewer?"))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp(""))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("   "))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("Follow the instructions"))
     }
 }
 
