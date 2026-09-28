@@ -29,7 +29,7 @@ enum SystemAudio {
 
         var volume: Float32 = 1
         size = UInt32(MemoryLayout<Float32>.size)
-        address.mSelector = kAudioHardwareServiceDeviceProperty_VirtualMainVolume
+        address.mSelector = kAudioDevicePropertyVolumeScalar
         if AudioObjectHasProperty(deviceID, &address),
            AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &volume) == noErr {
             return volume <= 0.001
