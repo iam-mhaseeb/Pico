@@ -74,7 +74,7 @@ final class TextActionMenuViewModel {
         do {
             suggestedText = try await processor.transform(action: action, text: originalText)
             phase = .preview
-            onPetState?(.success)
+            onPetState?(.curious)
         } catch let error as AIError where error == .cancelled {
             phase = .chooseAction
             onPetState?(.listening)
@@ -94,7 +94,7 @@ final class TextActionMenuViewModel {
                 sourceAppPID: sourceAppPID
             )
             pasteboardSnapshot = nil
-            onPetState?(.success)
+            onPetState?(.celebrating)
             finish()
             return true
         } catch {

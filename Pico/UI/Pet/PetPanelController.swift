@@ -20,6 +20,18 @@ final class PetPanelController {
     private var hoverSquash: CGFloat = 1
     private var isGhosted = false
     private var ghostOpacity: CGFloat { PicoTheme.ghostOpacity }
+    private var outfit: PetSeasonOutfit = .none
+    private var showBow = false
+    private var animationInterval: TimeInterval = 1.0 / 20.0
+    private var pauseAnimation = false
+    private var toastText: String?
+    private var toyPanels: [UUID: FloatingPanel] = [:]
+    var onDismissToast: (() -> Void)?
+    var onGreeting: (() -> Void)?
+
+    var isDragging: Bool { container?.isCurrentlyDragging ?? false }
+
+    private var showsChrome: Bool { toastText != nil || speech.text != nil }
 
     var frame: NSRect? {
         panel?.frame
@@ -28,16 +40,15 @@ final class PetPanelController {
     /// Frame of the pet face itself (excludes bubble slot).
     var petFaceFrame: NSRect? {
         guard let panel else { return nil }
-        let width = PicoTheme.petSize
-        let height = PicoTheme.petSize
-        let x = panel.frame.midX - width / 2
-        let y: CGFloat
-        if speech.text != nil, bubbleBelow {
-            y = panel.frame.maxY - height
-        } else {
-            y = panel.frame.minY
-        }
-        return NSRect(x: x, y: y, width: width, height: height)
+        let origin = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: showsChrome && bubbleBelow
+        )
+        return NSRect(
+            origin: origin,
+            size: NSSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
+        )
     }
 
     func attach(coordinator: AppCoordinator) {
@@ -83,11 +94,15 @@ final class PetPanelController {
             container.onShoo = { [weak coordinator] in
                 coordinator?.handleShooGesture()
             }
-            container.onDragEnded = { [weak self] in
+            container.onDragEnded = { [weak self, weak coordinator] in
                 self?.finishDragWithSnap()
+                coordinator?.handlePetDragEnded()
             }
-            container.onHoverChanged = { [weak self] hovering in
+            container.onHoverChanged = { [weak self, weak coordinator] hovering in
                 self?.setHovering(hovering)
+                if hovering {
+                    coordinator?.handlePetHover()
+                }
             }
             container.menuBuilder = { [weak coordinator] in
                 Self.makeContextMenu(coordinator: coordinator)
@@ -113,6 +128,91 @@ final class PetPanelController {
         isGhosted = false
         panel?.alphaValue = 1
         panel?.orderOut(nil)
+        hideToys()
+    }
+
+    func applyVisual(_ visual: PetVisualState) {
+        outfit = visual.outfit
+        showBow = visual.showBow
+        animationInterval = visual.animationInterval
+        pauseAnimation = visual.pauseAnimation
+        let toastChanged = toastText != visual.toast
+        toastText = visual.toast
+        if toastChanged {
+            updateBubbleFlipPreference()
+            relayoutForSpeech()
+        }
+        refreshContent()
+    }
+
+    func movePetFace(to faceOrigin: CGPoint, animated: Bool) {
+        guard let panel else { return }
+        let origin = panelOrigin(forFaceOrigin: faceOrigin)
+        let apply = {
+            panel.setFrameOrigin(origin)
+        }
+        if animated, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.45
+                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.17, 0.89, 0.32, 1.28)
+                panel.animator().setFrame(NSRect(origin: origin, size: panel.frame.size), display: true)
+            } completionHandler: { [weak self] in
+                Task { @MainActor in
+                    self?.persistPosition()
+                }
+            }
+        } else {
+            apply()
+            persistPosition()
+        }
+    }
+
+    func syncToys(_ toys: [PetToy]) {
+        let live = Set(toys.map(\.id))
+        for (id, toyPanel) in toyPanels where !live.contains(id) {
+            toyPanel.orderOut(nil)
+            toyPanels[id] = nil
+        }
+        for toy in toys {
+            let toyPanel = toyPanels[toy.id] ?? makeToyPanel(for: toy)
+            toyPanel.setFrameOrigin(toy.origin)
+            if panel?.isVisible == true {
+                toyPanel.orderFrontRegardless()
+            }
+            toyPanels[toy.id] = toyPanel
+        }
+    }
+
+    private func hideToys() {
+        for toyPanel in toyPanels.values {
+            toyPanel.orderOut(nil)
+        }
+    }
+
+    private func makeToyPanel(for toy: PetToy) -> FloatingPanel {
+        let size = NSSize(width: PetToyDrop.toySize, height: PetToyDrop.toySize)
+        let panel = FloatingPanel(
+            contentRect: NSRect(origin: toy.origin, size: size),
+            styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView]
+        )
+        panel.isMovable = false
+        panel.allowsKeyFocus = false
+        panel.ignoresMouseEvents = true
+        panel.hasShadow = false
+        panel.setSwiftUIContent(PetToyView(kind: toy.kind))
+        return panel
+    }
+
+    private func panelOrigin(forFaceOrigin faceOrigin: CGPoint) -> CGPoint {
+        let width = showsChrome ? max(PicoTheme.petSize, PicoTheme.petBubbleSize) : PicoTheme.petSize
+        return PetChromeLayout.panelOrigin(
+            faceOrigin: faceOrigin,
+            petSize: PicoTheme.petSize,
+            chromeWidth: width,
+            bubbleSlot: Self.bubbleSlotHeight,
+            showsChrome: showsChrome,
+            bubbleBelow: bubbleBelow
+        )
     }
 
     func setGhosted(_ ghosted: Bool, animated: Bool = true) {
@@ -188,7 +288,9 @@ final class PetPanelController {
                     display: true
                 )
             } completionHandler: { [weak self] in
-                self?.persistPosition()
+                Task { @MainActor in
+                    self?.persistPosition()
+                }
             }
         } else {
             apply()
@@ -196,19 +298,7 @@ final class PetPanelController {
     }
 
     func persistPosition() {
-        guard let panel else { return }
-        // Persist the pet-face origin (bottom-left of the face), not bubble chrome.
-        let faceOrigin: CGPoint
-        if speech.text != nil, !bubbleBelow {
-            faceOrigin = panel.frame.origin
-        } else if speech.text != nil, bubbleBelow {
-            faceOrigin = CGPoint(
-                x: panel.frame.origin.x,
-                y: panel.frame.maxY - PicoTheme.petSize
-            )
-        } else {
-            faceOrigin = panel.frame.origin
-        }
+        guard let panel, let faceOrigin = petFaceFrame?.origin else { return }
         let screen = panel.screen ?? ScreenManager.primaryScreen
         UserDefaults.standard.set(faceOrigin.x, forKey: PreferenceKey.petOriginX)
         UserDefaults.standard.set(faceOrigin.y, forKey: PreferenceKey.petOriginY)
@@ -227,12 +317,7 @@ final class PetPanelController {
         let snapEnabled = defaults.object(forKey: PreferenceKey.petEdgeSnapEnabled) as? Bool ?? true
         // Snap using the pet-face footprint so speech-bubble chrome doesn't skew docking.
         let faceSize = CGSize(width: PicoTheme.petSize, height: PicoTheme.petSize)
-        let faceOrigin: CGPoint = {
-            if speech.text != nil, bubbleBelow {
-                return CGPoint(x: panel.frame.origin.x, y: panel.frame.maxY - PicoTheme.petSize)
-            }
-            return panel.frame.origin
-        }()
+        let faceOrigin = petFaceFrame?.origin ?? panel.frame.origin
         let result = PetEdgeSnap.snapOrigin(
             for: faceSize,
             from: faceOrigin,
@@ -240,10 +325,10 @@ final class PetPanelController {
         )
 
         let targetOrigin: CGPoint = {
-            if speech.text != nil, bubbleBelow {
+            if showsChrome, bubbleBelow {
                 return CGPoint(x: result.origin.x, y: result.origin.y - Self.bubbleSlotHeight)
             }
-            if speech.text != nil {
+            if showsChrome {
                 let width = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
                 return CGPoint(x: result.origin.x - (width - PicoTheme.petSize) / 2, y: result.origin.y)
             }
@@ -274,7 +359,9 @@ final class PetPanelController {
                 display: true
             )
         } completionHandler: { [weak self] in
-            self?.persistPosition()
+            Task { @MainActor in
+                self?.persistPosition()
+            }
         }
     }
 
@@ -302,7 +389,13 @@ final class PetPanelController {
             coordinator: coordinator,
             bubbleText: speech.text,
             bubbleBelow: bubbleBelow,
-            hoverSquash: hoverSquash
+            hoverSquash: hoverSquash,
+            outfit: outfit,
+            showBow: showBow,
+            animationInterval: animationInterval,
+            pauseAnimation: pauseAnimation,
+            toastText: toastText,
+            onDismissToast: { [weak self] in self?.onDismissToast?() }
         )
     }
 
@@ -338,7 +431,7 @@ final class PetPanelController {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard self.panel?.isVisible == true else { return }
-            self.showSpeech(.greeting)
+            self.onGreeting?()
         }
     }
 
@@ -348,37 +441,38 @@ final class PetPanelController {
             return
         }
         let screen = panel.screen ?? ScreenManager.primaryScreen
-        let faceTop = panel.frame.minY + PicoTheme.petSize
-        let spaceAbove = screen.visibleFrame.maxY - faceTop
-        bubbleBelow = spaceAbove < Self.bubbleSlotHeight + 8
+        let face = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: bubbleBelow
+        )
+        bubbleBelow = PetChromeLayout.shouldPlaceBubbleBelow(
+            faceMaxY: face.y + PicoTheme.petSize,
+            screenMaxY: screen.visibleFrame.maxY,
+            bubbleSlot: Self.bubbleSlotHeight
+        )
     }
 
     private func relayoutForSpeech() {
         guard let panel else { return }
-        let faceOrigin: CGPoint = {
-            if speech.text != nil || panel.frame.height > PicoTheme.petSize + 1 {
-                // Derive face origin from current layout.
-                if panel.frame.height > PicoTheme.petSize + 1 {
-                    if bubbleBelow {
-                        return CGPoint(x: panel.frame.origin.x, y: panel.frame.maxY - PicoTheme.petSize)
-                    }
-                    return panel.frame.origin
-                }
-            }
-            return panel.frame.origin
-        }()
+        let faceOrigin = PetChromeLayout.faceOrigin(
+            panel: panel.frame,
+            petSize: PicoTheme.petSize,
+            bubbleBelow: bubbleBelow
+        )
 
-        let hasBubble = speech.text != nil
-        let width = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
+        let hasBubble = showsChrome
+        let chromeWidth = max(PicoTheme.petSize, PicoTheme.petBubbleSize)
+        let width = hasBubble ? chromeWidth : PicoTheme.petSize
         let height = PicoTheme.petSize + (hasBubble ? Self.bubbleSlotHeight : 0)
-        let origin: CGPoint
-        if hasBubble, bubbleBelow {
-            origin = CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y - Self.bubbleSlotHeight)
-        } else if hasBubble {
-            origin = CGPoint(x: faceOrigin.x - (width - PicoTheme.petSize) / 2, y: faceOrigin.y)
-        } else {
-            origin = faceOrigin
-        }
+        let origin = PetChromeLayout.panelOrigin(
+            faceOrigin: faceOrigin,
+            petSize: PicoTheme.petSize,
+            chromeWidth: chromeWidth,
+            bubbleSlot: Self.bubbleSlotHeight,
+            showsChrome: hasBubble,
+            bubbleBelow: bubbleBelow
+        )
         panel.setFrame(NSRect(origin: origin, size: NSSize(width: width, height: height)), display: true)
         container?.frame = NSRect(origin: .zero, size: NSSize(width: width, height: height))
     }
@@ -419,6 +513,16 @@ final class PetPanelController {
         let shoo = Self.item("Shoo Pico") { coordinator?.handleShooGesture() }
         shoo.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(shoo)
+        menu.addItem(.separator())
+        let toysEnabled = coordinator?.canDropToys == true
+        for kind in PetToyKind.allCases {
+            let item = Self.item("Drop \(kind.title)") { coordinator?.dropToy(kind) }
+            item.isEnabled = toysEnabled
+            menu.addItem(item)
+        }
+        let clear = Self.item("Clear toys") { coordinator?.clearToys() }
+        clear.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
+        menu.addItem(clear)
         menu.addItem(.separator())
         menu.addItem(Self.item("Settings") { coordinator?.showSettings() })
         let pauseTitle = PicoMenuLayout.pauseTitle(isPaused: paused)

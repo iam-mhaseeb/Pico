@@ -17,7 +17,10 @@ enum ScreenIntent {
             #"describe (my |the )?(screen|window|page|display)"#,
             #"screenshot"#,
             #"this (window|page|screen)"#,
-            #"on (my |the )screen"#
+            #"on (my |the )screen"#,
+            #"read (the |my )?(screen|display)"#,
+            #"follow (the )?(instructions|prompt) on (the |my )?(screen|display)"#,
+            #"instructions on (my |the )?(screen|display)"#
         ]
         return matches(any: patterns, in: text)
     }

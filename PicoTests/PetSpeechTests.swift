@@ -3,9 +3,11 @@ import XCTest
 
 final class PetSpeechTests: XCTestCase {
     func testLinesExistForAllKinds() {
-        for kind in [PetSpeechKind.pet, .feed, .shoo, .greeting] {
-            let line = PetSpeechLines.line(for: kind)
-            XCTAssertFalse(line.isEmpty)
+        for persona in PetPersona.allCases {
+            for kind in PetSpeechKind.allCases {
+                let line = PetSpeechLines.line(for: kind, persona: persona)
+                XCTAssertFalse(line.isEmpty)
+            }
         }
     }
 }

@@ -92,7 +92,7 @@ struct TextActionMenu: View {
     private var petStateForPhase: PetState {
         switch viewModel.phase {
         case .processing: return .thinking
-        case .preview: return .success
+        case .preview: return .curious
         case .error: return .error
         case .permissionRequired, .emptySelection: return .curious
         case .chooseAction: return .listening

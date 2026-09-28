@@ -39,6 +39,35 @@ final class MenuBarController {
 
         menu.addItem(menuItem("History", action: #selector(history)))
         menu.addItem(.separator())
+
+        let pet = menuItem("Pet Pico", action: #selector(petPico))
+        pet.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
+        menu.addItem(pet)
+        let feed = menuItem("Feed Pico", action: #selector(feedPico))
+        feed.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
+        menu.addItem(feed)
+        let shoo = menuItem("Shoo Pico", action: #selector(shooPico))
+        shoo.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
+        menu.addItem(shoo)
+
+        let toys = NSMenu()
+        for kind in PetToyKind.allCases {
+            let item = NSMenuItem(title: kind.title, action: #selector(dropToy(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = kind.rawValue
+            item.isEnabled = coordinator?.canDropToys == true
+            toys.addItem(item)
+        }
+        toys.addItem(.separator())
+        let clear = NSMenuItem(title: "Clear toys", action: #selector(clearToys), keyEquivalent: "")
+        clear.target = self
+        clear.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
+        toys.addItem(clear)
+        let toysItem = NSMenuItem(title: "Drop toy", action: nil, keyEquivalent: "")
+        toysItem.submenu = toys
+        menu.addItem(toysItem)
+
+        menu.addItem(.separator())
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
         let pauseTitle = PicoMenuLayout.pauseTitle(isPaused: paused)
@@ -56,6 +85,14 @@ final class MenuBarController {
     @objc private func ask() { coordinator?.showAssistant() }
     @objc private func textActions() { coordinator?.showTextActions() }
     @objc private func history() { coordinator?.showHistory() }
+    @objc private func petPico() { coordinator?.handlePetGesture() }
+    @objc private func feedPico() { coordinator?.handleFeedGesture() }
+    @objc private func shooPico() { coordinator?.handleShooGesture() }
+    @objc private func dropToy(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let kind = PetToyKind(rawValue: raw) else { return }
+        coordinator?.dropToy(kind)
+    }
+    @objc private func clearToys() { coordinator?.clearToys() }
     @objc private func settings() { coordinator?.showSettings() }
     @objc private func togglePause() { coordinator?.togglePause() }
     @objc private func quit() { coordinator?.quit() }

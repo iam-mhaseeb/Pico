@@ -9,6 +9,8 @@ final class ScreenIntentTests: XCTestCase {
         XCTAssertTrue(ScreenIntent.requestsScreenHelp("What do you see?"))
         XCTAssertTrue(ScreenIntent.requestsScreenHelp("Describe this window"))
         XCTAssertTrue(ScreenIntent.requestsScreenHelp("Take a screenshot of that"))
+        XCTAssertTrue(ScreenIntent.requestsScreenHelp("Read the screen and follow the instructions"))
+        XCTAssertTrue(ScreenIntent.requestsScreenHelp("Follow the instructions on my screen"))
     }
 
     func testActionPhrases() {
@@ -26,6 +28,7 @@ final class ScreenIntentTests: XCTestCase {
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("How do I impress the interviewer?"))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp(""))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("   "))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("Follow the instructions"))
     }
 }
 

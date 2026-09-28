@@ -27,6 +27,8 @@ final class AssistantViewModel {
     private var streamSaveCounter = 0
 
     var onPetState: ((PetState) -> Void)?
+    /// Optional persona flavor when Ask was opened from the pet.
+    var toneHint: String?
 
     var headerPetState: PetState {
         if isSending {
@@ -191,7 +193,8 @@ final class AssistantViewModel {
                 let stream = aiService.ask(
                     prompt: prompt,
                     conversationID: conversationID,
-                    screenContext: screenContext
+                    screenContext: screenContext,
+                    toneHint: toneHint
                 )
                 for try await partial in stream {
                     guard !Task.isCancelled else { break }
