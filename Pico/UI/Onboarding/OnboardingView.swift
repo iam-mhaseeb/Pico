@@ -137,12 +137,13 @@ struct OnboardingView: View {
             Text("Play with Pico")
                 .font(.title2.weight(.semibold))
             VStack(alignment: .leading, spacing: 6) {
-                Text("Click — Ask Pico")
-                Text("Double-click — pet")
-                Text("Right-click — menu (Feed / Shoo)")
+                Text("Click — pet")
+                Text("Double-click — feed")
+                Text("Right-click — shoo")
+                Text("Press and hold — Ask Pico")
             }
             .font(.body.monospaced())
-            Text("Drag to move. Hotkeys still work from anywhere.")
+            Text("Drag to move. Ghost Mode fades Pico while you type. Control-click opens the menu.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -182,6 +183,7 @@ struct OnboardingView: View {
 
     private func finish() {
         UserDefaults.standard.set(true, forKey: PreferenceKey.hasCompletedOnboarding)
+        UserDefaults.standard.set(true, forKey: PreferenceKey.hasSeenPetTips)
         UserDefaults.standard.set(launchAtLoginPreferred, forKey: PreferenceKey.launchAtLogin)
         if launchAtLoginPreferred {
             try? LaunchAtLoginManager.setEnabled(true)

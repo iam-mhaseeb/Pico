@@ -47,7 +47,8 @@ protocol AIProvider: Sendable {
         prompt: String,
         sessionID: UUID?,
         instructions: String?,
-        extraContext: String?
+        extraContext: String?,
+        toneHint: String?
     ) -> AsyncThrowingStream<String, Error>
     func generate(prompt: String, instructions: String?) async throws -> String
     func cancel(sessionID: UUID?)

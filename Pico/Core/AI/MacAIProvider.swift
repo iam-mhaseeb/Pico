@@ -40,7 +40,8 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
         prompt: String,
         sessionID: UUID?,
         instructions: String?,
-        extraContext: String?
+        extraContext: String?,
+        toneHint: String?
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -63,7 +64,8 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
                     let promptToSend = PromptTemplates.composeAskPrompt(
                         user: trimmed,
                         history: self.seededHistory(for: sessionID),
-                        screen: screenContext
+                        screen: screenContext,
+                        toneHint: toneHint
                     )
 
                     let session: LanguageModelSession

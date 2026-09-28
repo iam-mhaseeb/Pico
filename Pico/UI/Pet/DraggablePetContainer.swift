@@ -17,7 +17,10 @@ final class DraggablePetContainer: NSView {
     private var isDragging = false
     private var isHovering = false
     private var singleClickWorkItem: DispatchWorkItem?
+    private var longPressWorkItem: DispatchWorkItem?
+    private var didLongPress = false
     private let dragThreshold: CGFloat = 3
+    private let longPressDelay: TimeInterval = 0.45
 
     override var isOpaque: Bool { false }
     override var mouseDownCanMoveWindow: Bool { false }
@@ -85,12 +88,33 @@ final class DraggablePetContainer: NSView {
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
     override func accessibilityHelp() -> String? {
-        "Click to ask Pico. Double-click to pet. Right-click for menu."
+        "Click to pet. Double-click to feed. Right-click to shoo. Press and hold to ask Pico. Drag to move. Control-click for the menu."
     }
 
     override func accessibilityPerformPress() -> Bool {
-        onAsk?()
+        onPet?()
         return true
+    }
+
+    override func accessibilityCustomActions() -> [NSAccessibilityCustomAction]? {
+        [
+            NSAccessibilityCustomAction(name: "Pet Pico") { [weak self] in
+                self?.onPet?()
+                return true
+            },
+            NSAccessibilityCustomAction(name: "Feed Pico") { [weak self] in
+                self?.onFeed?()
+                return true
+            },
+            NSAccessibilityCustomAction(name: "Shoo Pico") { [weak self] in
+                self?.onShoo?()
+                return true
+            },
+            NSAccessibilityCustomAction(name: "Ask Pico") { [weak self] in
+                self?.onAsk?()
+                return true
+            }
+        ]
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -108,9 +132,18 @@ final class DraggablePetContainer: NSView {
 
     override func mouseDown(with event: NSEvent) {
         guard window != nil else { return }
+        if event.modifierFlags.contains(.control) {
+            cancelPendingClicks()
+            if let menu = menuBuilder?() {
+                NSMenu.popUpContextMenu(menu, with: event, for: self)
+            }
+            return
+        }
         mouseDownScreenPoint = NSEvent.mouseLocation
         windowOriginAtMouseDown = window?.frame.origin
         isDragging = false
+        didLongPress = false
+        scheduleLongPress()
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -127,7 +160,7 @@ final class DraggablePetContainer: NSView {
         if !isDragging {
             guard hypot(deltaX, deltaY) >= dragThreshold else { return }
             isDragging = true
-            cancelSingleClick()
+            cancelPendingClicks()
             if isHovering {
                 isHovering = false
                 onHoverChanged?(false)
@@ -150,36 +183,53 @@ final class DraggablePetContainer: NSView {
             windowOriginAtMouseDown = nil
         }
 
+        cancelLongPress()
+
         if isDragging {
             isDragging = false
             onDragEnded?()
             return
         }
 
-        if event.clickCount >= 2 {
-            cancelSingleClick()
-            onPet?()
+        if didLongPress {
             return
         }
 
-        if event.clickCount == 1 {
+        let resolution = PetClickResolver.resolve(
+            dragged: false,
+            longPress: false,
+            clickCount: event.clickCount,
+            rightClick: false,
+            controlClick: false
+        )
+        switch resolution {
+        case .feed:
+            cancelSingleClick()
+            onFeed?()
+        case .pet:
             cancelSingleClick()
             let work = DispatchWorkItem { [weak self] in
-                self?.onAsk?()
+                self?.onPet?()
             }
             singleClickWorkItem = work
             DispatchQueue.main.asyncAfter(
                 deadline: .now() + NSEvent.doubleClickInterval,
                 execute: work
             )
+        default:
+            break
         }
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        cancelSingleClick()
-        if let menu = menuBuilder?() {
-            NSMenu.popUpContextMenu(menu, with: event, for: self)
+        cancelPendingClicks()
+        if event.modifierFlags.contains(.control) {
+            if let menu = menuBuilder?() {
+                NSMenu.popUpContextMenu(menu, with: event, for: self)
+            }
+            return
         }
+        onShoo?()
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -189,6 +239,28 @@ final class DraggablePetContainer: NSView {
     private func cancelSingleClick() {
         singleClickWorkItem?.cancel()
         singleClickWorkItem = nil
+    }
+
+    private func cancelLongPress() {
+        longPressWorkItem?.cancel()
+        longPressWorkItem = nil
+    }
+
+    private func cancelPendingClicks() {
+        cancelSingleClick()
+        cancelLongPress()
+    }
+
+    private func scheduleLongPress() {
+        cancelLongPress()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, !self.isDragging else { return }
+            self.didLongPress = true
+            self.cancelSingleClick()
+            self.onAsk?()
+        }
+        longPressWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + longPressDelay, execute: work)
     }
 
     func clampedOrigin(_ origin: CGPoint, for window: NSWindow) -> CGPoint {

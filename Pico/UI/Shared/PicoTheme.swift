@@ -37,4 +37,5 @@ enum PreferenceKey {
     static let petEdgeSnapEnabled = "petEdgeSnapEnabled"
     /// When true, Pico fades while typing / focused in text fields.
     static let ghostModeEnabled = "ghostModeEnabled"
+    static let hasSeenPetTips = "hasSeenPetTips"
 }

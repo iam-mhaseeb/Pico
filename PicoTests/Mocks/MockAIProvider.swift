@@ -34,7 +34,8 @@ final class MockAIProvider: AIProvider, @unchecked Sendable {
         prompt: String,
         sessionID: UUID?,
         instructions: String?,
-        extraContext: String?
+        extraContext: String?,
+        toneHint: String?
     ) -> AsyncThrowingStream<String, Error> {
         let chunks = withLock { streamChunks }
         let error = withLock { streamError }

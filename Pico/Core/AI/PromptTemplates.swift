@@ -73,9 +73,13 @@ enum PromptTemplates {
     static func composeAskPrompt(
         user: String,
         history: [(role: String, content: String)]?,
-        screen: String?
+        screen: String?,
+        toneHint: String? = nil
     ) -> String {
         var parts: [String] = []
+        if let toneHint, !toneHint.isEmpty {
+            parts.append("Dialogue vibe: \(toneHint)")
+        }
         if let history, !history.isEmpty {
             let historyBlock = history.map { "\($0.role): \($0.content)" }.joined(separator: "\n")
             parts.append("Previous conversation:\n\(historyBlock)")

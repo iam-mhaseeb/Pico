@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var confirmClear = false
 
     var body: some View {
+        ScrollView {
         Form {
             Section("General") {
                 Toggle("Launch Pico at login", isOn: $launchAtLogin)
@@ -56,14 +57,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Pet gestures") {
-                LabeledContent("Ask Pico", value: "Click")
-                LabeledContent("Pet", value: "Double-click")
-                LabeledContent("Menu / Feed / Shoo", value: "Right-click")
-                Text("Drag still repositions Pico. Ambient gestures pause while Ask is busy.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            PetCompanionSettings(coordinator: coordinator)
 
             Section("Keyboard") {
                 LabeledContent("Ask Pico", value: "⌥ Space")
@@ -106,7 +100,8 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 420, height: 640)
+        }
+        .frame(width: 460, height: 720)
         .onAppear {
             launchAtLogin = LaunchAtLoginManager.isEnabled
             if LaunchAtLoginManager.requiresApproval {

@@ -9,22 +9,29 @@ final class AppCoordinator {
     var hotkeyRegistrationFailed = false
     var hotkeyAskFailed = false
     var hotkeyTextFailed = false
+    var careStats = CareStats.initial()
+    var usageTrait = UsageTrait.balanced
+    var progression = PetProgression()
 
     private let environment: AppEnvironment
     private let petPanel = PetPanelController()
     private let menuBar = MenuBarController()
     private let ghostModeMonitor = GhostModeMonitor()
+    private let director = PetDirector()
 
     private var assistantPanel: FloatingPanel?
     private var textPanel: FloatingPanel?
     private var historyPanel: FloatingPanel?
     private var settingsWindow: NSWindow?
     private var onboardingPanel: FloatingPanel?
+    private var tipsPanel: FloatingPanel?
 
     private var assistantViewModel: AssistantViewModel?
     private var textViewModel: TextActionMenuViewModel?
     private var historyViewModel: HistoryViewModel?
     private var successResetTask: Task<Void, Never>?
+    /// True while Ask Pico or Text Actions is on screen. Ambient "working" is not a session.
+    private var aiSessionActive = false
     private var textActionsTask: Task<Void, Never>?
 
     init(environment: AppEnvironment) {
@@ -50,12 +57,10 @@ final class AppCoordinator {
         ghostModeMonitor.onGhostActiveChanged = { [weak self] active in
             guard let self else { return }
             self.petPanel.setGhosted(active)
-            if active, self.petState == .idle {
-                self.setPetState(.sleeping)
-            } else if !active, self.petState == .sleeping {
-                self.setPetState(.idle)
-            }
+            self.director.setGhostActive(active)
         }
+
+        wirePetDirector()
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -88,16 +93,22 @@ final class AppCoordinator {
             hotkeyRegistrationFailed = hotkeyAskFailed || hotkeyTextFailed
             updatePetVisibility()
             startGhostModeIfNeeded()
+            director.start()
+            maybeShowPetTips()
         }
         menuBar.reloadMenu()
     }
 
-    func showAssistant(conversation: Conversation? = nil) {
+    func showAssistant(conversation: Conversation? = nil, fromPet: Bool = false) {
         guard !isPaused else { return }
         hideTextPanel()
         hideHistory()
 
         if assistantPanel?.isVisible == true, conversation == nil {
+            if fromPet {
+                assistantPanel?.makeKeyAndOrderFrontActivating()
+                return
+            }
             hideAssistant()
             return
         }
@@ -111,9 +122,11 @@ final class AppCoordinator {
             store: environment.conversationStore,
             screenAgent: environment.screenAgent
         )
+        viewModel.toneHint = fromPet ? director.currentSettings().persona.promptFlavor : nil
         viewModel.onPetState = { [weak self] state in
-            self?.setPetState(state)
+            self?.applySessionPetState(state)
         }
+        director.interact(.ask)
         if let conversation {
             viewModel.load(conversation: conversation)
         }
@@ -144,6 +157,7 @@ final class AppCoordinator {
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
         panel.makeKeyAndOrderFrontActivating()
         assistantPanel = panel
+        aiSessionActive = true
         setPetState(.listening)
     }
 
@@ -161,6 +175,7 @@ final class AppCoordinator {
             assistantViewModel?.cancel()
         }
         assistantPanel?.orderOut(nil)
+        aiSessionActive = false
         setPetState(.idle)
     }
 
@@ -168,6 +183,7 @@ final class AppCoordinator {
         guard !isPaused else { return }
         hideAssistant()
         hideHistory()
+        aiSessionActive = true
 
         // Abandon any prior text-actions session so clipboard is restored.
         textActionsTask?.cancel()
@@ -175,8 +191,9 @@ final class AppCoordinator {
 
         let viewModel = TextActionMenuViewModel(processor: environment.textProcessor)
         viewModel.onPetState = { [weak self] state in
-            self?.setPetState(state)
+            self?.applySessionPetState(state)
         }
+        director.interact(.text)
         viewModel.onFinished = { [weak self] in
             self?.hideTextPanel()
         }
@@ -216,6 +233,7 @@ final class AppCoordinator {
             // Non-activating: do not steal focus from the source app.
             panel.orderFrontRegardless()
             self.textPanel = panel
+            self.aiSessionActive = true
             self.repositionTextPanelIfNeeded()
         }
     }
@@ -226,6 +244,7 @@ final class AppCoordinator {
         textViewModel?.abandon()
         textViewModel = nil
         textPanel?.orderOut(nil)
+        aiSessionActive = false
         if petState == .thinking || petState == .listening || petState == .curious {
             setPetState(.idle)
         }
@@ -277,7 +296,7 @@ final class AppCoordinator {
     func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 640),
+                contentRect: NSRect(x: 0, y: 0, width: 460, height: 720),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -316,6 +335,7 @@ final class AppCoordinator {
         if isPaused {
             environment.hotkeyManager.unregister()
             ghostModeMonitor.stop()
+            director.stop()
             hideAssistant()
             hideTextPanel()
             hideHistory()
@@ -331,8 +351,10 @@ final class AppCoordinator {
         updatePetVisibility()
         if show && !isPaused {
             startGhostModeIfNeeded()
+            director.start()
         } else {
             ghostModeMonitor.stop()
+            director.stop()
         }
     }
 
@@ -371,13 +393,13 @@ final class AppCoordinator {
         NSApp.terminate(nil)
     }
 
-    func setPetState(_ state: PetState, force: Bool = false) {
+    func setPetState(_ state: PetState, force: Bool = false, hold: Bool = false) {
         let resolved = PetStateMachine.resolve(current: petState, requested: state, force: force)
         guard resolved != petState || force else { return }
         successResetTask?.cancel()
         petState = resolved
         petPanel.refreshContent()
-        if resolved.isTransient {
+        if resolved.isTransient && !hold {
             let delay: UInt64 = resolved == .celebrating ? 1_200_000_000 : 900_000_000
             successResetTask = Task {
                 try? await Task.sleep(nanoseconds: delay)
@@ -389,18 +411,38 @@ final class AppCoordinator {
         }
     }
 
-    func showPetSpeech(_ kind: PetSpeechKind) {
-        petPanel.showSpeech(kind)
+    private func applySessionPetState(_ state: PetState) {
+        director.noteSessionPose(state)
+        setPetState(state, hold: state == .curious)
+        guard director.currentSettings().sessionBubbles else { return }
+        let persona = director.currentSettings().persona
+        switch state {
+        case .success, .celebrating:
+            petPanel.showSpeech(text: PetSpeechLines.line(for: .success, persona: persona))
+        case .error:
+            petPanel.showSpeech(text: PetSpeechLines.line(for: .error, persona: persona))
+        default:
+            break
+        }
     }
+
+    func showPetSpeech(_ kind: PetSpeechKind) {
+        let line = PetSpeechLines.line(for: kind, persona: director.currentSettings().persona)
+        petPanel.showSpeech(text: line)
+    }
+
+    var canDropToys: Bool { !isPaused && director.allowsToys }
 
     func handleAskFromPet() {
         guard !isPaused else { return }
-        showAssistant()
+        showAssistant(fromPet: true)
     }
 
     func handlePetGesture() {
         guard !isPaused else { return }
         guard canPlayAmbientGesture else { return }
+        director.interact(.pet)
+        director.playGreetingIfNeeded()
         setPetState(.love, force: true)
         showPetSpeech(.pet)
     }
@@ -408,6 +450,8 @@ final class AppCoordinator {
     func handleFeedGesture() {
         guard !isPaused else { return }
         guard canPlayAmbientGesture else { return }
+        director.interact(.feed)
+        director.playFeed()
         setPetState(.celebrating, force: true)
         showPetSpeech(.feed)
     }
@@ -415,19 +459,124 @@ final class AppCoordinator {
     func handleShooGesture() {
         guard !isPaused else { return }
         guard canPlayAmbientGesture else { return }
+        director.interact(.shoo)
+        director.playShoo()
         setPetState(.sad, force: true)
         showPetSpeech(.shoo)
         petPanel.dashToRandomNearbySpot(animated: true)
     }
 
-    private var canPlayAmbientGesture: Bool {
-        // Allow after success/error; block during active Ask/Text work.
-        switch petState {
-        case .listening, .thinking, .working:
-            return false
-        default:
-            return true
+    func handlePetDragEnded() {
+        director.interact(.drag)
+    }
+
+    func handlePetHover() {
+        director.interact(.hover)
+    }
+
+    func dropToy(_ kind: PetToyKind) {
+        director.dropToy(kind)
+    }
+
+    func clearToys() {
+        director.clearToys()
+    }
+
+    func petSettings() -> PetStoredSettings {
+        director.currentSettings()
+    }
+
+    func savePetSettings(_ settings: PetStoredSettings) {
+        director.updateSettings(settings)
+    }
+
+    func resetPetCare() { director.resetCare() }
+    func resetPetProgression() { director.resetProgression() }
+    func resetPetUsage() { director.resetUsage() }
+
+    func showPetTips() {
+        if tipsPanel == nil {
+            let panel = FloatingPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
+                styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel]
+            )
+            panel.title = "Pet tips"
+            panel.allowsKeyFocus = true
+            tipsPanel = panel
         }
+        tipsPanel?.setSwiftUIContent(
+            PetTipsView { [weak self] in
+                self?.completePetTips()
+            }
+        )
+        tipsPanel?.center()
+        tipsPanel?.makeKeyAndOrderFrontActivating()
+    }
+
+    private func maybeShowPetTips() {
+        guard UserDefaults.standard.bool(forKey: PreferenceKey.hasCompletedOnboarding) else { return }
+        guard !UserDefaults.standard.bool(forKey: PreferenceKey.hasSeenPetTips) else { return }
+        showPetTips()
+    }
+
+    private func completePetTips() {
+        UserDefaults.standard.set(true, forKey: PreferenceKey.hasSeenPetTips)
+        tipsPanel?.orderOut(nil)
+    }
+
+    private func wirePetDirector() {
+        petPanel.onDismissToast = { [weak self] in
+            self?.director.dismissToast()
+        }
+        petPanel.onGreeting = { [weak self] in
+            guard let self else { return }
+            let line = PetSpeechLines.line(for: .greeting, persona: self.director.currentSettings().persona)
+            self.petPanel.showSpeech(text: line)
+            self.director.playGreetingIfNeeded()
+        }
+        director.onApplyState = { [weak self] state in
+            self?.setPetState(state, hold: true)
+        }
+        director.onSpeech = { [weak self] text in
+            self?.petPanel.showSpeech(text: text)
+        }
+        director.onMove = { [weak self] origin, animated in
+            self?.petPanel.movePetFace(to: origin, animated: animated)
+        }
+        director.onToys = { [weak self] toys in
+            self?.petPanel.syncToys(toys)
+        }
+        director.onVisual = { [weak self] visual in
+            self?.petPanel.applyVisual(visual)
+        }
+        director.onSnapshot = { [weak self] stats, trait, progression in
+            self?.careStats = stats
+            self?.usageTrait = trait
+            self?.progression = progression
+        }
+        director.origin = { [weak self] in
+            self?.petPanel.petFaceFrame?.origin
+        }
+        director.visibleFrame = { [weak self] in
+            if let frame = self?.petPanel.petFaceFrame,
+               let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) {
+                return screen.visibleFrame
+            }
+            return ScreenManager.primaryScreen.visibleFrame
+        }
+        director.isDragging = { [weak self] in
+            self?.petPanel.isDragging ?? false
+        }
+        director.isSessionBusy = { [weak self] in
+            self?.aiSessionActive ?? false
+        }
+        director.isPaused = { [weak self] in
+            self?.isPaused ?? true
+        }
+    }
+
+    private var canPlayAmbientGesture: Bool {
+        !aiSessionActive
     }
 
     private func updatePetVisibility() {

@@ -38,4 +38,16 @@ final class PromptTemplatesTests: XCTestCase {
             "Hi"
         )
     }
+
+    func testComposeAskPromptIncludesPersonaFlavor() {
+        let composed = PromptTemplates.composeAskPrompt(
+            user: "Hello",
+            history: nil,
+            screen: nil,
+            toneHint: "Playfully snarky, never mean."
+        )
+        XCTAssertTrue(composed.contains("Dialogue vibe:"))
+        XCTAssertTrue(composed.contains("snarky"))
+        XCTAssertTrue(composed.contains("Hello"))
+    }
 }
