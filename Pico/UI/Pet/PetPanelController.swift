@@ -95,11 +95,11 @@ final class PetPanelController {
             container.onShoo = { [weak coordinator] in
                 coordinator?.handleShooGesture()
             }
-            container.onDragEnded = { [weak self] in
+            container.onDragEnded = { [weak self, weak coordinator] in
                 self?.finishDragWithSnap()
                 coordinator?.handlePetDragEnded()
             }
-            container.onHoverChanged = { [weak self] hovering in
+            container.onHoverChanged = { [weak self, weak coordinator] hovering in
                 self?.setHovering(hovering)
                 if hovering {
                     coordinator?.handlePetHover()
@@ -158,7 +158,9 @@ final class PetPanelController {
                 context.timingFunction = CAMediaTimingFunction(controlPoints: 0.17, 0.89, 0.32, 1.28)
                 panel.animator().setFrame(NSRect(origin: origin, size: panel.frame.size), display: true)
             } completionHandler: { [weak self] in
-                self?.persistPosition()
+                Task { @MainActor in
+                    self?.persistPosition()
+                }
             }
         } else {
             apply()
@@ -286,7 +288,9 @@ final class PetPanelController {
                     display: true
                 )
             } completionHandler: { [weak self] in
-                self?.persistPosition()
+                Task { @MainActor in
+                    self?.persistPosition()
+                }
             }
         } else {
             apply()
@@ -372,7 +376,9 @@ final class PetPanelController {
                 display: true
             )
         } completionHandler: { [weak self] in
-            self?.persistPosition()
+            Task { @MainActor in
+                self?.persistPosition()
+            }
         }
     }
 
