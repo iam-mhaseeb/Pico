@@ -1,27 +1,58 @@
 import AppKit
+import SwiftUI
 
 @MainActor
 final class MenuBarController {
     private var statusItem: NSStatusItem?
     private weak var coordinator: AppCoordinator?
+    private var shownState: PetState = .idle
 
     func attach(coordinator: AppCoordinator) {
         self.coordinator = coordinator
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let item = NSStatusBar.system.statusItem(withLength: 28)
         if let button = item.button {
-            button.image = NSImage(
-                systemSymbolName: "pawprint.fill",
-                accessibilityDescription: "Pico"
-            )
-            button.image?.isTemplate = true
-            button.toolTip = "Pico — A little AI buddy"
+            button.imagePosition = .imageOnly
+            button.toolTip = "Pico"
+            button.setAccessibilityLabel("Pico")
         }
         item.menu = buildMenu()
         statusItem = item
+        renderMascot()
     }
 
     func reloadMenu() {
         statusItem?.menu = buildMenu()
+    }
+
+    func setMascot(state: PetState, paused: Bool) {
+        shownState = paused ? .sleeping : state
+        renderMascot()
+        let button = statusItem?.button
+        button?.toolTip = paused ? "Pico is paused" : "Pico"
+        button?.setAccessibilityLabel("Pico, \(shownState.accessibilityDescription)")
+    }
+
+    /// Screen coordinates of the menu-bar icon, used to open panels just beneath it.
+    func anchorScreenRect() -> NSRect? {
+        guard let button = statusItem?.button else { return nil }
+        return button.window?.convertToScreen(button.bounds)
+    }
+
+    private func renderMascot() {
+        let renderer = ImageRenderer(
+            content: MenuBarMascotLabel(state: shownState)
+        )
+        renderer.scale = statusItem?.button?.window?.backingScaleFactor
+            ?? NSScreen.main?.backingScaleFactor
+            ?? 2
+        renderer.proposedSize = ProposedViewSize(
+            width: MenuBarMascotLabel.side,
+            height: MenuBarMascotLabel.side
+        )
+        guard let image = renderer.nsImage else { return }
+        image.isTemplate = false
+        image.size = NSSize(width: MenuBarMascotLabel.side, height: MenuBarMascotLabel.side)
+        statusItem?.button?.image = image
     }
 
     private func buildMenu() -> NSMenu {
@@ -38,35 +69,6 @@ final class MenuBarController {
         menu.addItem(text)
 
         menu.addItem(menuItem("History", action: #selector(history)))
-        menu.addItem(.separator())
-
-        let pet = menuItem("Pet Pico", action: #selector(petPico))
-        pet.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
-        menu.addItem(pet)
-        let feed = menuItem("Feed Pico", action: #selector(feedPico))
-        feed.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
-        menu.addItem(feed)
-        let shoo = menuItem("Shoo Pico", action: #selector(shooPico))
-        shoo.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
-        menu.addItem(shoo)
-
-        let toys = NSMenu()
-        for kind in PetToyKind.allCases {
-            let item = NSMenuItem(title: kind.title, action: #selector(dropToy(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = kind.rawValue
-            item.isEnabled = coordinator?.canDropToys == true
-            toys.addItem(item)
-        }
-        toys.addItem(.separator())
-        let clear = NSMenuItem(title: "Clear toys", action: #selector(clearToys), keyEquivalent: "")
-        clear.target = self
-        clear.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
-        toys.addItem(clear)
-        let toysItem = NSMenuItem(title: "Drop toy", action: nil, keyEquivalent: "")
-        toysItem.submenu = toys
-        menu.addItem(toysItem)
-
         menu.addItem(.separator())
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
@@ -85,15 +87,18 @@ final class MenuBarController {
     @objc private func ask() { coordinator?.showAssistant() }
     @objc private func textActions() { coordinator?.showTextActions() }
     @objc private func history() { coordinator?.showHistory() }
-    @objc private func petPico() { coordinator?.handlePetGesture() }
-    @objc private func feedPico() { coordinator?.handleFeedGesture() }
-    @objc private func shooPico() { coordinator?.handleShooGesture() }
-    @objc private func dropToy(_ sender: NSMenuItem) {
-        guard let raw = sender.representedObject as? String, let kind = PetToyKind(rawValue: raw) else { return }
-        coordinator?.dropToy(kind)
-    }
-    @objc private func clearToys() { coordinator?.clearToys() }
     @objc private func settings() { coordinator?.showSettings() }
     @objc private func togglePause() { coordinator?.togglePause() }
     @objc private func quit() { coordinator?.quit() }
+}
+
+struct MenuBarMascotLabel: View {
+    static let side: CGFloat = 18
+
+    let state: PetState
+
+    var body: some View {
+        PetFaceView(state: state, size: Self.side, pauseAnimation: true)
+            .frame(width: Self.side, height: Self.side)
+    }
 }

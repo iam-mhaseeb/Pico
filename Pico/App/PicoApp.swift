@@ -13,6 +13,6 @@ struct PicoApp: App {
                     .frame(width: 420, height: 200)
             }
         }
-        .defaultSize(width: 420, height: 480)
+        .defaultSize(width: 460, height: 520)
     }
 }

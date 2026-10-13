@@ -26,22 +26,19 @@ Ask Pico (`⌥ Space`) is global. Rows marked ✓ for Ask were frontmost when th
 - [ ] Dark mode
 - [ ] Light mode
 - [ ] Multiple monitors (Ask opens on active display) — this machine had one display
-- [ ] Unplug display (mascot moves to primary)
+- [ ] Unplug display (menu bar mascot stays in the menu bar; Ask follows the active display)
 - [ ] Sleep / wake (hotkeys still work)
 - [x] Launch at login — Settings toggle on; login item not proven by a reboot
 - [x] Accessibility off → permission UI — after a Debug rebuild, TCC dropped and Text Actions showed “Accessibility needed”
 - [ ] Apple Intelligence off → friendly error — Intelligence was available; on-device Ask replied `PING`
 - [x] Clipboard restore after text insert (string pasteboard) — TextEdit insert left `CLIPBOARD_MARKER_PICO` intact
 - [ ] Clipboard restore when pasteboard had an image
-- [x] Pause Pico disables hotkeys and hides mascot — pet hidden; Ask / Text Actions menu items disabled after `autoenablesItems = false`
-- [ ] Idle CPU near zero with mascot visible — observed ~5% CPU for a few seconds after launch (pet animation)
+- [ ] Pause Pico disables hotkeys and rests the menu bar face — an earlier pass verified this for the desktop pet (hotkeys off, Ask / Text Actions disabled)
+- [ ] Idle CPU with the menu bar mascot visible
 
 ## Also verified this pass
 
-- [x] Pet single-click opens Ask
-- [x] Pet double-click love reaction
 - [x] Ask multi-turn context (follow-up still answered `PING`)
 - [x] History lists the conversation while Keep History is on
-- [x] Ghost Mode fades pet (~0.3 opacity) while typing in TextEdit; restores after leaving the field
 - [x] Empty selection in TextEdit → “Select some text first” (after capture fix)
 - [x] Unit tests — 77 passing locally; GitHub Action runs them on PRs and pushes to `main`

@@ -9,7 +9,7 @@ struct OnboardingView: View {
         ("Meet", "Meet"),
         ("Ask", "Ask"),
         ("Text", "Text"),
-        ("Play", "Play"),
+        ("Menu", "Menu"),
         ("Access", "Access"),
         ("Ready", "Ready")
     ]
@@ -23,7 +23,7 @@ struct OnboardingView: View {
                 case 0: meetPage
                 case 1: askPage
                 case 2: textPage
-                case 3: playPage
+                case 3: menuBarPage
                 case 4: permissionsPage
                 case 5: readyPage
                 default: meetPage
@@ -132,22 +132,15 @@ struct OnboardingView: View {
         }
     }
 
-    private var playPage: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Play with Pico")
+    private var menuBarPage: some View {
+        VStack(spacing: 16) {
+            PetFaceView(state: .idle, size: 72)
+            Text("Pico lives in your menu bar")
                 .font(.title2.weight(.semibold))
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Click — pet")
-                Text("Double-click — feed")
-                Text("Right-click — shoo")
-                Text("Press and hold — Ask Pico")
-            }
-            .font(.body.monospaced())
-            Text("Drag to move. Ghost Mode fades Pico while you type. Control-click opens the menu.")
-                .font(.subheadline)
+            Text("Click the Pico face to ask, rewrite text, or open history. Pico itself stays in the menu bar.")
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var permissionsPage: some View {
@@ -174,7 +167,7 @@ struct OnboardingView: View {
             PetFaceView(state: .success, size: 72)
             Text("You’re ready!")
                 .font(.title.weight(.semibold))
-            Text("Pico will sit quietly until you need help.")
+            Text("Pico will sit quietly in the menu bar until you need help.")
                 .foregroundStyle(.secondary)
             Toggle("Launch Pico at login", isOn: $launchAtLoginPreferred)
                 .toggleStyle(.checkbox)
@@ -183,7 +176,6 @@ struct OnboardingView: View {
 
     private func finish() {
         UserDefaults.standard.set(true, forKey: PreferenceKey.hasCompletedOnboarding)
-        UserDefaults.standard.set(true, forKey: PreferenceKey.hasSeenPetTips)
         UserDefaults.standard.set(launchAtLoginPreferred, forKey: PreferenceKey.launchAtLogin)
         if launchAtLoginPreferred {
             try? LaunchAtLoginManager.setEnabled(true)

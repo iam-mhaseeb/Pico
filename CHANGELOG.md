@@ -7,13 +7,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Pico runs from the menu bar. The mascot is the menu bar face and still reacts during Ask and Text Actions
+- Ask and History open under the menu bar icon
+
+### Removed
+
+- Desktop overlay
+- Mascot extras: drag, pet, feed, shoo, toys, Ghost Mode, edge snap, wander, care stats, outfits, speech, and pet tips
+
 ### Added
 
 - Open-source project docs: LICENSE (MIT), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, PRIVACY, issue/PR templates
-- Pet gestures: click to pet, double-click to feed, right-click to shoo, press-and-hold to Ask Pico
-- Idle hobbies, deep sleep, cursor peek, edge wander, Focus Blocks, and app-based moods
-- Toys, local care stats, personas, night routine, seasonal outfits, XP, and a usage trait
-- Performance Mode, optional system sounds, pet tips, and VoiceOver equivalents for each gesture
 - Screen prompts that ask Pico to read on-screen instructions trigger Look
 
 ## [1.0.0] - 2026-08
