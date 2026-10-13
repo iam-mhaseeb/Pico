@@ -43,6 +43,29 @@ final class PromptTemplatesTests: XCTestCase {
         )
     }
 
+    func testNewWritingActionsStayResultOnly() {
+        let reply = PromptTemplates.reply(text: "ping")
+        XCTAssertTrue(reply.instructions.contains("reply"))
+        XCTAssertEqual(reply.prompt, "ping")
+
+        let translate = PromptTemplates.translate(text: "hola")
+        XCTAssertTrue(translate.instructions.contains("English"))
+        XCTAssertTrue(translate.instructions.contains("Spanish"))
+
+        let bullets = PromptTemplates.bullets(text: "one two")
+        XCTAssertTrue(bullets.instructions.lowercased().contains("bullet"))
+
+        let custom = PromptTemplates.custom(instruction: "Make it warmer", text: "hello")
+        XCTAssertTrue(custom.instructions.contains("Make it warmer"))
+        XCTAssertTrue(custom.instructions.contains("Return only the result text"))
+        XCTAssertEqual(custom.prompt, "hello")
+    }
+
+    func testAskPersonalityMentionsTheAllowStep() {
+        XCTAssertTrue(PromptTemplates.askPersonality.contains("allow"))
+        XCTAssertTrue(PromptTemplates.askPersonality.contains("secure"))
+    }
+
     func testComposeAskPromptIncludesPersonaFlavor() {
         let composed = PromptTemplates.composeAskPrompt(
             user: "Hello",

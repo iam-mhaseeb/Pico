@@ -134,6 +134,26 @@ final class TextProcessorCaptureTests: XCTestCase {
         XCTAssertEqual(keyEvents.pasteCount, 1)
         XCTAssertEqual(clipboard.readString(), "original")
     }
+
+    func testUndoRestoresTheOriginalAndASecondUndoFails() async throws {
+        accessibility.setSelectedTextResult = true
+        processor.rememberUndo(original: "before", strategy: .accessibility, sourceAppPID: nil)
+        XCTAssertTrue(processor.canUndo)
+        try await processor.undoLast()
+        XCTAssertEqual(accessibility.lastSetText, "before")
+        XCTAssertFalse(processor.canUndo)
+        do {
+            try await processor.undoLast()
+            XCTFail("Expected a second undo to fail")
+        } catch let error as TextReplacementError {
+            XCTAssertEqual(error, .replaceFailed)
+        }
+    }
+
+    func testCopyWritesTheClipboard() {
+        processor.copyToClipboard("kept")
+        XCTAssertEqual(clipboard.readString(), "kept")
+    }
 }
 
 extension TextProcessor.CaptureError: Equatable {}

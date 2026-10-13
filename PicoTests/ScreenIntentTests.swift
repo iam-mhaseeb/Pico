@@ -29,6 +29,17 @@ final class ScreenIntentTests: XCTestCase {
         XCTAssertFalse(ScreenIntent.requestsScreenHelp(""))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("   "))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("Follow the instructions"))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("I clicked the wrong link yesterday"))
+    }
+
+    func testMoreScreenPhrases() {
+        XCTAssertTrue(ScreenIntent.looksAtScreen("can you see my screen"))
+        XCTAssertTrue(ScreenIntent.looksAtScreen("instructions on the display"))
+        XCTAssertTrue(ScreenIntent.actsOnScreen("uncheck the box"))
+        XCTAssertTrue(ScreenIntent.actsOnScreen("scroll down"))
+        XCTAssertTrue(ScreenIntent.actsOnScreen("open the menu"))
+        XCTAssertFalse(ScreenIntent.actsOnScreen("open the window later"))
+        XCTAssertFalse(ScreenIntent.looksAtScreen("my screenplay"))
     }
 }
 
@@ -47,8 +58,24 @@ final class ScreenDescriptionTests: XCTestCase {
         XCTAssertEqual(snapshot.node(matching: "#12")?.title, "Submit")
         XCTAssertEqual(snapshot.node(matching: "Submit")?.id, 12)
         XCTAssertEqual(snapshot.node(matching: "submit all")?.id, 13)
+        XCTAssertEqual(snapshot.node(matching: "12")?.id, 12)
         XCTAssertNil(snapshot.node(matching: "   "))
+        XCTAssertNil(snapshot.node(matching: "#nope"))
         XCTAssertTrue(snapshot.node(matching: "Password")?.secure == true)
+    }
+
+    func testAmbiguousContainsPrefersTheEnabledControl() {
+        let snapshot = AccessibilitySnapshot(
+            appName: "Mail",
+            pid: 2,
+            windowTitle: "Compose",
+            nodes: [
+                AXNode(id: 1, role: "button", title: "Send later", value: nil, enabled: false, secure: false),
+                AXNode(id: 2, role: "button", title: "Send now", value: nil, enabled: true, secure: false)
+            ]
+        )
+        XCTAssertEqual(snapshot.node(matching: "send")?.id, 2)
+        XCTAssertEqual(snapshot.description(maxNodes: 1).contains("Send later"), true)
     }
 
     func testInteractiveRolesUseStringNamesIncludingLink() {
@@ -108,5 +135,30 @@ final class ScreenKeyPressParserTests: XCTestCase {
         XCTAssertThrowsError(try ScreenKeyPressParser.parse("   ")) { error in
             XCTAssertEqual(error as? ScreenKeyPressParser.ParseError, .empty)
         }
+        XCTAssertThrowsError(try ScreenKeyPressParser.parse("shift+option")) { error in
+            XCTAssertEqual(error as? ScreenKeyPressParser.ParseError, .empty)
+        }
+        XCTAssertThrowsError(try ScreenKeyPressParser.parse("a+b")) { error in
+            XCTAssertEqual(error as? ScreenKeyPressParser.ParseError, .unknownKey("b"))
+        }
+    }
+
+    func testAliasesAndLetters() throws {
+        let tab = try ScreenKeyPressParser.parse("ctrl + tab")
+        XCTAssertEqual(tab.keyCode, ScreenKeyPressParser.keyCode(for: "tab"))
+        XCTAssertTrue(tab.flags.contains(.maskControl))
+
+        let option = try ScreenKeyPressParser.parse("alt+esc")
+        XCTAssertEqual(option.keyCode, ScreenKeyPressParser.keyCode(for: "escape"))
+        XCTAssertTrue(option.flags.contains(.maskAlternate))
+
+        let digit = try ScreenKeyPressParser.parse("shift+5")
+        XCTAssertEqual(digit.keyCode, ScreenKeyPressParser.keyCode(for: "5"))
+        XCTAssertTrue(digit.flags.contains(.maskShift))
+
+        XCTAssertEqual(ScreenKeyPressParser.keyCode(for: "spacebar"), ScreenKeyPressParser.keyCode(for: "space"))
+        XCTAssertEqual(ScreenKeyPressParser.keyCode(for: "enter"), ScreenKeyPressParser.keyCode(for: "return"))
+        XCTAssertNil(ScreenKeyPressParser.keyCode(for: "smile"))
+        XCTAssertTrue(ScreenKeyPressParser.ParseError.unknownKey("smile").errorDescription?.contains("smile") == true)
     }
 }

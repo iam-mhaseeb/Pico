@@ -40,31 +40,37 @@ enum UpdateChecker {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, http.statusCode == 404 {
-                return UpdateCheckResult(
-                    message: "No public release yet. You’re on \(currentVersion).",
-                    releaseURL: nil
-                )
-            }
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                return UpdateCheckResult(message: "Couldn’t look for an update.", releaseURL: nil)
-            }
-            let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-            let latest = release.tagName
-            let page = URL(string: release.htmlURL)
-            if VersionCompare.isNewer(latest, than: currentVersion) {
-                return UpdateCheckResult(
-                    message: "Version \(latest) is available. You’re on \(currentVersion).",
-                    releaseURL: page
-                )
-            }
-            return UpdateCheckResult(
-                message: "You’re up to date (\(currentVersion)).",
-                releaseURL: page
-            )
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            return interpret(statusCode: status, body: data, currentVersion: currentVersion)
         } catch {
             return UpdateCheckResult(message: "Couldn’t look for an update.", releaseURL: nil)
         }
+    }
+
+    /// Turns a GitHub releases response into the message Settings shows.
+    static func interpret(statusCode: Int, body: Data, currentVersion: String) -> UpdateCheckResult {
+        if statusCode == 404 {
+            return UpdateCheckResult(
+                message: "No public release yet. You’re on \(currentVersion).",
+                releaseURL: nil
+            )
+        }
+        guard (200..<300).contains(statusCode),
+              let release = try? JSONDecoder().decode(GitHubRelease.self, from: body)
+        else {
+            return UpdateCheckResult(message: "Couldn’t look for an update.", releaseURL: nil)
+        }
+        let page = URL(string: release.htmlURL)
+        if VersionCompare.isNewer(release.tagName, than: currentVersion) {
+            return UpdateCheckResult(
+                message: "Version \(release.tagName) is available. You’re on \(currentVersion).",
+                releaseURL: page
+            )
+        }
+        return UpdateCheckResult(
+            message: "You’re up to date (\(currentVersion)).",
+            releaseURL: page
+        )
     }
 
     static func appVersion() -> String {

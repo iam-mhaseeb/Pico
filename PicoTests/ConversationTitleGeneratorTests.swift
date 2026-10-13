@@ -21,6 +21,16 @@ final class ConversationTitleGeneratorTests: XCTestCase {
         XCTAssertTrue(input.hasPrefix(title) || title.split(separator: " ").count >= 1)
     }
 
+    func testExactLimitIsKept() {
+        let exact = String(repeating: "a", count: 42)
+        XCTAssertEqual(ConversationTitleGenerator.title(from: exact), exact)
+    }
+
+    func testLongWordWithoutSpacesIsCutAtTheLimit() {
+        let word = String(repeating: "b", count: 60)
+        XCTAssertEqual(ConversationTitleGenerator.title(from: word).count, 42)
+    }
+
     func testNewlinesCollapsedToSpaces() {
         XCTAssertEqual(
             ConversationTitleGenerator.title(from: "Hello\nthere"),

@@ -67,6 +67,15 @@ final class PicoMenuLayoutTests: XCTestCase {
         XCTAssertFalse(titles.contains("Feed Pico"))
         XCTAssertFalse(titles.contains("Shoo Pico"))
         XCTAssertFalse(titles.contains("Drop toy"))
+        XCTAssertEqual(titles, [
+            "Ask Pico",
+            "Text Actions",
+            "Undo last rewrite",
+            "History",
+            "Settings…",
+            "Pause Pico",
+            "Quit Pico"
+        ])
     }
 }
 
@@ -100,6 +109,18 @@ final class MenuBarPanelPlacementTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(origin.y, visible.minY + 4)
         XCTAssertLessThanOrEqual(origin.x + size.width, visible.maxX - 4)
         XCTAssertLessThanOrEqual(origin.y + size.height, visible.maxY - 4)
+    }
+
+    func testPanelClampsToTheLeftAndBottomEdges() {
+        let visible = CGRect(x: 20, y: 40, width: 800, height: 500)
+        let origin = MenuBarPanelPlacement.origin(
+            anchor: CGRect(x: 0, y: 30, width: 10, height: 10),
+            panelSize: CGSize(width: 300, height: 400),
+            visibleFrame: visible,
+            gap: 8
+        )
+        XCTAssertEqual(origin.x, visible.minX + 4, accuracy: 0.1)
+        XCTAssertEqual(origin.y, visible.minY + 4, accuracy: 0.1)
     }
 }
 

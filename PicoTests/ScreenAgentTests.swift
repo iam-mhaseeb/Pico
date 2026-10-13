@@ -35,14 +35,16 @@ private struct MockOCR: ScreenOCRProviding {
 
 @MainActor
 private final class MockAXSnapshotter: AXSnapshotProviding {
+    var nodes: [AXNode] = [
+        AXNode(id: 1, role: "button", title: "Submit", value: nil, enabled: true, secure: false)
+    ]
+
     func snapshot(pid: pid_t, appName: String) -> (AccessibilitySnapshot, AXElementMap) {
         let snapshot = AccessibilitySnapshot(
             appName: appName,
             pid: pid,
             windowTitle: "Home",
-            nodes: [
-                AXNode(id: 1, role: "button", title: "Submit", value: nil, enabled: true, secure: false)
-            ]
+            nodes: nodes
         )
         return (snapshot, AXElementMap())
     }
@@ -90,20 +92,30 @@ final class ScreenAgentTests: XCTestCase {
     private var capturer: MockScreenCapturer!
     private var actions: MockScreenActions!
     private var permission: MockScreenPermission!
+    private var ax: MockAXSnapshotter!
     private var agent: ScreenAgent!
+    private var accessibilityTrusted = true
 
     override func setUp() async throws {
         capturer = MockScreenCapturer()
         actions = MockScreenActions()
         permission = MockScreenPermission()
+        ax = MockAXSnapshotter()
+        accessibilityTrusted = true
         agent = ScreenAgent(
             capturer: capturer,
             ocr: MockOCR(),
-            ax: MockAXSnapshotter(),
+            ax: ax,
             actions: actions,
             permission: permission,
-            accessibilityTrusted: { true }
+            accessibilityTrusted: { [self] in accessibilityTrusted }
         )
+    }
+
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: PreferenceKey.screenAllowlistEnabled)
+        UserDefaults.standard.removeObject(forKey: PreferenceKey.screenAllowlistApps)
+        super.tearDown()
     }
 
     func testLookIsGatedUntilTurnEnabled() async {
@@ -193,6 +205,104 @@ final class ScreenAgentTests: XCTestCase {
         let result = await agent.clickAt(x: 0.2, y: 0.2)
         XCTAssertTrue(result.contains("allowed"))
         XCTAssertTrue(actions.clicks.isEmpty)
+    }
+
+    func testConfirmAllowsTheClickAndNamesTheAction() async {
+        agent.beginTurn(enabled: true)
+        var summaries: [String] = []
+        agent.confirmAction = { summary in
+            summaries.append(summary)
+            return true
+        }
+        let ok = await agent.clickAt(x: 0.5, y: 0.25)
+        XCTAssertTrue(ok.contains("Clicked at (0.50, 0.25)"))
+        XCTAssertEqual(actions.clicks.count, 1)
+        XCTAssertEqual(summaries.count, 1)
+        XCTAssertTrue(summaries[0].contains("Click a point"))
+    }
+
+    func testDeniedConfirmDoesNotUseTheActionBudget() async {
+        agent.beginTurn(enabled: true)
+        agent.confirmAction = { _ in false }
+        for _ in 0..<ScreenAgent.maxActionsPerTurn + 2 {
+            let denied = await agent.clickAt(x: 0.1, y: 0.1)
+            XCTAssertTrue(denied.contains("stopped"))
+        }
+        agent.confirmAction = { _ in true }
+        let ok = await agent.clickAt(x: 0.3, y: 0.3)
+        XCTAssertTrue(ok.contains("Clicked"))
+        XCTAssertEqual(actions.clicks.count, 1)
+    }
+
+    func testClickCoordinatesAreClampedIntoTheDisplay() async {
+        agent.beginTurn(enabled: true)
+        let ok = await agent.clickAt(x: 4, y: -2)
+        XCTAssertTrue(ok.contains("Clicked at (1.00, 0.00)"))
+    }
+
+    func testMissingAccessibilityBlocksActions() async {
+        accessibilityTrusted = false
+        agent.beginTurn(enabled: true)
+        let result = await agent.pressKey("return")
+        XCTAssertTrue(result.contains("Accessibility"))
+        XCTAssertTrue(agent.accessibilityNeeded)
+        XCTAssertTrue(actions.keys.isEmpty)
+    }
+
+    func testPressKeyAndUnknownKey() async {
+        agent.beginTurn(enabled: true)
+        let ok = await agent.pressKey("command+c")
+        XCTAssertEqual(ok, "Pressed command+c.")
+        XCTAssertEqual(actions.keys, ["command+c"])
+
+        let bad = await agent.pressKey("command+notakey")
+        XCTAssertTrue(bad.contains("notakey"))
+        XCTAssertEqual(actions.keys.count, 1)
+    }
+
+    func testTypeTextIsClipped() async {
+        agent.beginTurn(enabled: true)
+        let huge = String(repeating: "a", count: ScreenActionExecutor.maxTypeCharacters + 25)
+        let ok = await agent.typeText(huge, field: "")
+        XCTAssertTrue(ok.contains("Typed"))
+        XCTAssertEqual(actions.typed.first?.count, ScreenActionExecutor.maxTypeCharacters)
+    }
+
+    func testSecureFieldIsNotTyped() async {
+        ax.nodes = [
+            AXNode(id: 4, role: "textField", title: "Password", value: nil, enabled: true, secure: true)
+        ]
+        agent.beginTurn(enabled: true)
+        _ = await agent.look()
+        let result = await agent.typeText("secret", field: "Password")
+        XCTAssertTrue(result.contains("secure"))
+        XCTAssertTrue(actions.typed.isEmpty)
+    }
+
+    func testClickElementReportsNearbyNamesAndRefusesWhenOff() async {
+        let denied = await agent.clickElement(target: "Submit")
+        XCTAssertTrue(denied.contains("Screen help is off"))
+        XCTAssertEqual(capturer.captureCount, 0)
+
+        agent.beginTurn(enabled: true)
+        let missing = await agent.clickElement(target: "Cancel")
+        XCTAssertTrue(missing.contains("couldn’t find"))
+        XCTAssertTrue(missing.contains("Submit"))
+    }
+
+    func testClickElementSaysTheControlIsGoneWhenTheMapIsEmpty() async {
+        agent.beginTurn(enabled: true)
+        let result = await agent.clickElement(target: "Submit")
+        XCTAssertTrue(result.contains("no longer available"))
+        XCTAssertEqual(capturer.captureCount, 1)
+    }
+
+    func testEndTurnStillAllowsAFollowUpAction() async {
+        agent.beginTurn(enabled: true)
+        _ = await agent.look()
+        agent.endTurn()
+        let ok = await agent.pressKey("tab")
+        XCTAssertEqual(ok, "Pressed tab.")
     }
 
     func testResetSessionDisablesTools() async {

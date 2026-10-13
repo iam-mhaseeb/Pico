@@ -161,4 +161,48 @@ final class AssistantViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.messages.filter { $0.role == "user" }.count, 1)
         XCTAssertEqual(viewModel.messages.first?.content, "First")
     }
+
+    func testSavedPromptsTrimDedupeAndDelete() {
+        let previous = UserDefaults.standard.data(forKey: PreferenceKey.savedPrompts)
+        defer {
+            if let previous {
+                UserDefaults.standard.set(previous, forKey: PreferenceKey.savedPrompts)
+            } else {
+                UserDefaults.standard.removeObject(forKey: PreferenceKey.savedPrompts)
+            }
+        }
+        UserDefaults.standard.removeObject(forKey: PreferenceKey.savedPrompts)
+        viewModel.savedPrompts = []
+
+        viewModel.input = "   "
+        viewModel.saveCurrentPrompt()
+        XCTAssertTrue(viewModel.savedPrompts.isEmpty)
+
+        viewModel.input = "  Remember this prompt  "
+        viewModel.saveCurrentPrompt()
+        XCTAssertEqual(viewModel.savedPrompts.count, 1)
+        XCTAssertEqual(viewModel.savedPrompts.first?.text, "Remember this prompt")
+        XCTAssertFalse(viewModel.savedPrompts.first?.title.isEmpty == true)
+
+        viewModel.input = "Remember this prompt"
+        viewModel.saveCurrentPrompt()
+        XCTAssertEqual(viewModel.savedPrompts.count, 1)
+
+        viewModel.input = "Second prompt"
+        viewModel.saveCurrentPrompt()
+        XCTAssertEqual(viewModel.savedPrompts.first?.text, "Second prompt")
+
+        if let first = viewModel.savedPrompts.first {
+            viewModel.deleteSavedPrompt(first)
+        }
+        XCTAssertEqual(viewModel.savedPrompts.count, 1)
+        XCTAssertEqual(viewModel.savedPrompts.first?.text, "Remember this prompt")
+    }
+
+    func testHeaderPetStateFollowsSendingAndScreenWork() {
+        XCTAssertEqual(viewModel.headerPetState, .listening)
+        viewModel.input = "Hi"
+        viewModel.send()
+        XCTAssertEqual(viewModel.headerPetState, .thinking)
+    }
 }

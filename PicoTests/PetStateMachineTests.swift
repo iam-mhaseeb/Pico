@@ -44,6 +44,19 @@ final class PetStateMachineTests: XCTestCase {
         )
     }
 
+    func testIdleAcceptsEveryExpression() {
+        for state in PetState.allCases {
+            XCTAssertEqual(PetStateMachine.resolve(current: .idle, requested: state), state)
+        }
+    }
+
+    func testSuccessAndErrorCanLeaveForAnotherExpression() {
+        XCTAssertEqual(PetStateMachine.resolve(current: .success, requested: .love), .love)
+        XCTAssertEqual(PetStateMachine.resolve(current: .error, requested: .idle), .idle)
+        XCTAssertEqual(PetStateMachine.resolve(current: .listening, requested: .idle), .idle)
+        XCTAssertEqual(PetStateMachine.resolve(current: .thinking, requested: .success), .success)
+    }
+
     func testForceOverridesSessionGuard() {
         XCTAssertEqual(
             PetStateMachine.resolve(current: .listening, requested: .idle, force: true),

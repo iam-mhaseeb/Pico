@@ -18,6 +18,7 @@ final class MockAIProvider: AIProvider, @unchecked Sendable {
     var seededHistories: [(UUID, [(role: String, content: String)])] = []
     var activeSessionIDs: Set<UUID> = []
     var lastPrompts: [String] = []
+    var lastInstructions: [String] = []
     var lastExtraContext: String?
 
     private func withLock<T>(_ body: () -> T) -> T {
@@ -68,6 +69,10 @@ final class MockAIProvider: AIProvider, @unchecked Sendable {
 
     func generate(prompt: String, instructions: String?) async throws -> String {
         let error = withLock { generateError }
+        withLock {
+            lastPrompts.append(prompt)
+            if let instructions { lastInstructions.append(instructions) }
+        }
         if let error { throw error }
         return withLock { generateResult }
     }

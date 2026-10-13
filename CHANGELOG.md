@@ -23,6 +23,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Pico asks before it clicks, types, or presses a key
 - Optional list of apps Pico is allowed to control
 - Check for updates against GitHub releases
+- A much larger unit test pass for writing, history, shortcuts, screen confirmation, and update checks
 - Open-source project docs: LICENSE (MIT), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, PRIVACY, issue/PR templates
 - Screen prompts that ask Pico to read on-screen instructions trigger Look
 

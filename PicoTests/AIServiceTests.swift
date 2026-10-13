@@ -12,6 +12,22 @@ final class AIServiceTests: XCTestCase {
             let result = try await service.perform(action: action, on: "hello")
             XCTAssertEqual(result, "ok")
         }
+        XCTAssertEqual(mock.lastPrompts.count, TextAction.allCases.count)
+        XCTAssertEqual(mock.lastInstructions.count, TextAction.allCases.count)
+        XCTAssertTrue(mock.lastInstructions.contains { $0.contains("bullet") })
+        XCTAssertTrue(mock.lastInstructions.contains { $0.contains("Spanish") })
+        XCTAssertTrue(mock.lastInstructions.contains { $0.contains("reply") })
+    }
+
+    func testCustomInstructionIsPassedThrough() async throws {
+        let mock = MockAIProvider()
+        mock.generateResult = "ok"
+        let service = AIService(provider: mock)
+        let result = try await service.performCustom(instruction: "Make it warmer", on: "hello")
+        XCTAssertEqual(result, "ok")
+        XCTAssertEqual(mock.lastPrompts, ["hello"])
+        XCTAssertTrue(mock.lastInstructions.first?.contains("Make it warmer") == true)
+        XCTAssertTrue(mock.lastInstructions.first?.contains("Return only the result text") == true)
     }
 
     func testGenerateErrorSurfaces() async {
