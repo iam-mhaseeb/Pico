@@ -67,15 +67,6 @@ enum ScreenManager {
         return screenNumber?.uint32Value ?? 0
     }
 
-    static func defaultPetOrigin(on screen: NSScreen) -> CGPoint {
-        let visible = screen.visibleFrame
-        let size = PicoTheme.petSize
-        return CGPoint(
-            x: visible.maxX - size - PicoTheme.screenMargin,
-            y: visible.minY + PicoTheme.screenMargin
-        )
-    }
-
     static func clampOrigin(_ origin: CGPoint, size: CGSize, on screen: NSScreen) -> CGPoint {
         let visible = screen.visibleFrame
         return CGPoint(

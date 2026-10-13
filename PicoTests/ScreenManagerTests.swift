@@ -37,12 +37,4 @@ final class ScreenManagerTests: XCTestCase {
         XCTAssertLessThanOrEqual(clamped.y + size.height, visible.maxY - 4)
     }
 
-    func testDefaultPetOriginIsOnScreen() throws {
-        guard let screen = NSScreen.screens.first else {
-            throw XCTSkip("No screen")
-        }
-        let origin = ScreenManager.defaultPetOrigin(on: screen)
-        let petRect = CGRect(origin: origin, size: CGSize(width: PicoTheme.petSize, height: PicoTheme.petSize))
-        XCTAssertTrue(screen.visibleFrame.contains(petRect))
-    }
 }

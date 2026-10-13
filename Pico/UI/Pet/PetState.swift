@@ -1,6 +1,6 @@
 import Foundation
 
-/// Shared pet emotion / activity states used by `PetView` and `PetPanelController`.
+/// Shared mascot expressions used by the menu-bar face and Pico panels.
 enum PetState: String, Sendable, Equatable, CaseIterable {
     // Core Ask / Text Actions loop
     case idle
@@ -44,7 +44,7 @@ enum PetState: String, Sendable, Equatable, CaseIterable {
     }
 }
 
-/// Lightweight transition helper shared by pet UI and panel controller.
+/// Lightweight transition helper for the menu-bar mascot.
 enum PetStateMachine {
     /// States Ask Pico / Text Actions may drive.
     /// `.working` is also an ambient mood (focus, a code editor, doodling), so it is not a session lock.

@@ -2,13 +2,13 @@
 
 **A little AI buddy** for your Mac.
 
-Pico is a local-first macOS accessory app: a quiet desktop mascot and menu bar utility powered by on-device Apple Intelligence. No account, no API key, no cloud backend.
+Pico is a local-first macOS menu bar app with a small mascot, powered by on-device Apple Intelligence. No account, no API key, no cloud backend. Pico stays in the menu bar instead of sitting on the desktop.
 
 ## What it does
 
 1. **Ask Pico** (`⌥ Space`) — chat from anywhere. Ask it to look at your screen or act on the UI when you need hands-on help.
 2. **Text Actions** (`⌥ ⇧ Space`) — select text, preview a rewrite, then Insert.
-3. **Desktop pet** — drag, click, feed, and shoo. Ghost Mode fades Pico while you type.
+3. **Menu bar mascot** — Pico’s face lives in the menu bar and reacts while Ask or Text Actions are working.
 
 ## Requirements
 
@@ -27,7 +27,8 @@ Pico is a local-first macOS accessory app: a quiet desktop mascot and menu bar u
 - **Look at screen** — on-device capture + UI reading; can click, type, or press keys when you ask
 - Conversation history (SwiftData; optional Keep History)
 - Text actions: Rewrite, Fix grammar, Professional, Casual, Shorter, Improve
-- Pet emotions, edge snap, Ghost Mode, launch at login, pause/resume
+- Menu bar mascot that reacts while Pico is listening, thinking, or done
+- Launch at login, pause/resume
 - Multi-monitor aware placement
 
 ## Build & run
@@ -78,8 +79,8 @@ Pico/
   Core/Screen/   # Capture, OCR, AX snapshot, UI actions
   Core/Text/     # Text Actions capture / transform / insert
   Core/Conversations/
-  System/        # Hotkeys, clipboard, panels, ghost mode
-  UI/            # Pet, Ask, Text Actions, History, Settings, Onboarding
+  System/        # Hotkeys, clipboard, panels, menu bar
+  UI/            # Mascot, Ask, Text Actions, History, Settings, Onboarding
 PicoTests/       # Unit tests (mocked AI / AX)
 project.yml      # XcodeGen spec — regenerate the .xcodeproj from this
 ```

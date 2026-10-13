@@ -2,11 +2,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var coordinator: AppCoordinator
-    @AppStorage(PreferenceKey.showPico) private var showPico = true
     @AppStorage(PreferenceKey.keepHistory) private var keepHistory = true
     @AppStorage(PreferenceKey.launchAtLogin) private var launchAtLogin = false
-    @AppStorage(PreferenceKey.petEdgeSnapEnabled) private var petEdgeSnapEnabled = true
-    @AppStorage(PreferenceKey.ghostModeEnabled) private var ghostModeEnabled = true
 
     @State private var launchError: String?
     @State private var confirmClear = false
@@ -33,31 +30,10 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Toggle("Show Pico", isOn: $showPico)
-                    .onChange(of: showPico) { _, newValue in
-                        coordinator.setShowPico(newValue)
-                    }
-
-                Text("Pico position")
-                Text("Drag Pico on the desktop to move. Position is remembered.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Toggle("Snap to screen edges", isOn: $petEdgeSnapEnabled)
-                Text("When on, Pico springs to a nearby edge if you drop close enough. Turn off to leave Pico free wherever you drop.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Toggle("Ghost Mode", isOn: $ghostModeEnabled)
-                    .onChange(of: ghostModeEnabled) { _, newValue in
-                        coordinator.setGhostModeEnabled(newValue)
-                    }
-                Text("Ghost Mode fades Pico while you focus a text field, then restores after a short idle. Pause hides Pico and disables hotkeys.")
+                Text("Pico stays in the menu bar. Pause turns off shortcuts and lets the face rest.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
-            PetCompanionSettings(coordinator: coordinator)
 
             Section("Keyboard") {
                 LabeledContent("Ask Pico", value: "⌥ Space")
@@ -101,7 +77,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         }
-        .frame(width: 460, height: 720)
+        .frame(width: 460, height: 520)
         .onAppear {
             launchAtLogin = LaunchAtLoginManager.isEnabled
             if LaunchAtLoginManager.requiresApproval {
