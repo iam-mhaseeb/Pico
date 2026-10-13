@@ -169,6 +169,32 @@ final class ScreenAgentTests: XCTestCase {
         XCTAssertEqual(actions.clicks.count, ScreenAgent.maxActionsPerTurn)
     }
 
+    func testConfirmStopsTheClick() async {
+        agent.beginTurn(enabled: true)
+        agent.confirmAction = { _ in false }
+        let result = await agent.clickAt(x: 0.4, y: 0.4)
+        XCTAssertTrue(result.contains("stopped"))
+        XCTAssertTrue(actions.clicks.isEmpty)
+    }
+
+    func testAllowlistBlocksControl() async {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: PreferenceKey.screenAllowlistEnabled)
+        let data = try? JSONEncoder().encode([
+            ScreenAllowlist.AppEntry(bundleID: "com.example.not-this-app", name: "Nope")
+        ])
+        defaults.set(data, forKey: PreferenceKey.screenAllowlistApps)
+        defer {
+            defaults.removeObject(forKey: PreferenceKey.screenAllowlistEnabled)
+            defaults.removeObject(forKey: PreferenceKey.screenAllowlistApps)
+        }
+
+        agent.beginTurn(enabled: true)
+        let result = await agent.clickAt(x: 0.2, y: 0.2)
+        XCTAssertTrue(result.contains("allowed"))
+        XCTAssertTrue(actions.clicks.isEmpty)
+    }
+
     func testResetSessionDisablesTools() async {
         agent.beginTurn(enabled: true)
         _ = await agent.look()

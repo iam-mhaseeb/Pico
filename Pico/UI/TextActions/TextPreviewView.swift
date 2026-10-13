@@ -5,6 +5,7 @@ struct TextPreviewView: View {
     let original: String
     let suggested: String
     var onCancel: () -> Void
+    var onCopy: () -> Void
     var onInsert: () -> Void
 
     var body: some View {
@@ -16,7 +17,8 @@ struct TextPreviewView: View {
             HStack {
                 Spacer()
                 Button("Cancel", action: onCancel)
-                Button("Insert ✓", action: onInsert)
+                Button("Copy", action: onCopy)
+                Button("Insert", action: onInsert)
                     .keyboardShortcut(.defaultAction)
             }
         }

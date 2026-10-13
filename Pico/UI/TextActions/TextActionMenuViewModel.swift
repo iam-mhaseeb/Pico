@@ -15,6 +15,7 @@ final class TextActionMenuViewModel {
 
     var phase: Phase = .chooseAction
     var selectedAction: TextAction?
+    var customInstruction = ""
     var originalText = ""
     var suggestedText = ""
     var selectionRect: CGRect?
@@ -84,6 +85,30 @@ final class TextActionMenuViewModel {
         }
     }
 
+    func runCustom() async {
+        let instruction = customInstruction.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !instruction.isEmpty else { return }
+        selectedAction = nil
+        phase = .processing
+        onPetState?(.thinking)
+        do {
+            suggestedText = try await processor.transform(instruction: instruction, text: originalText)
+            phase = .preview
+            onPetState?(.curious)
+        } catch let error as AIError where error == .cancelled {
+            phase = .chooseAction
+            onPetState?(.listening)
+        } catch {
+            phase = .error((error as? LocalizedError)?.errorDescription ?? AIError.generationFailed.localizedDescription)
+            onPetState?(.error)
+        }
+    }
+
+    func copySuggestion() {
+        pasteboardSnapshot = nil
+        processor.copyToClipboard(suggestedText)
+    }
+
     @discardableResult
     func insert() async -> Bool {
         do {
@@ -93,6 +118,7 @@ final class TextActionMenuViewModel {
                 pasteboardSnapshot: pasteboardSnapshot,
                 sourceAppPID: sourceAppPID
             )
+            processor.rememberUndo(original: originalText, strategy: strategy, sourceAppPID: sourceAppPID)
             pasteboardSnapshot = nil
             onPetState?(.celebrating)
             finish()

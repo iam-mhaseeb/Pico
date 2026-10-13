@@ -9,15 +9,19 @@ final class AppCoordinator {
     var hotkeyRegistrationFailed = false
     var hotkeyAskFailed = false
     var hotkeyTextFailed = false
+    var canUndoRewrite: Bool { environment.textProcessor.canUndo }
 
     private let environment: AppEnvironment
     private let menuBar = MenuBarController()
 
-    private var assistantPanel: FloatingPanel?
+    private enum PopoverContent { case ask, history }
+    private var popoverContent: PopoverContent?
+
     private var textPanel: FloatingPanel?
-    private var historyPanel: FloatingPanel?
     private var settingsWindow: NSWindow?
     private var onboardingPanel: FloatingPanel?
+    private var confirmPanel: FloatingPanel?
+    private var confirmContinuation: CheckedContinuation<Bool, Never>?
 
     private var assistantViewModel: AssistantViewModel?
     private var textViewModel: TextActionMenuViewModel?
@@ -30,11 +34,15 @@ final class AppCoordinator {
         menuBar.attach(coordinator: self)
 
         environment.screenAgent.hideChrome = { [weak self] in
-            self?.assistantPanel?.orderOut(nil)
-            self?.historyPanel?.orderOut(nil)
+            self?.menuBar.orderOutPopover()
         }
         environment.screenAgent.restoreChrome = { [weak self] in
-            self?.assistantPanel?.makeKeyAndOrderFrontActivating()
+            guard self?.popoverContent != nil else { return }
+            self?.menuBar.orderFrontPopover()
+        }
+        environment.screenAgent.confirmAction = { [weak self] summary in
+            guard let self else { return false }
+            return await self.confirmScreenAction(summary)
         }
 
         environment.hotkeyManager.onAsk = { [weak self] in
@@ -73,14 +81,13 @@ final class AppCoordinator {
     func showAssistant(conversation: Conversation? = nil) {
         guard !isPaused else { return }
         hideTextPanel()
-        hideHistory()
 
-        if assistantPanel?.isVisible == true, conversation == nil {
+        if menuBar.isPopoverShown, popoverContent == .ask, conversation == nil {
             hideAssistant()
             return
         }
 
-        if assistantPanel?.isVisible != true {
+        if !menuBar.isPopoverShown {
             environment.screenAgent.rememberTargetApp()
         }
 
@@ -102,32 +109,18 @@ final class AppCoordinator {
             onClose: { [weak self] in self?.hideAssistant() },
             onOpenHistory: { [weak self] in self?.showHistory() }
         )
-
-        let size = assistantSize()
-        let origin = panelOriginAttachedToMenuBar(size: size)
-
-        let panel = assistantPanel ?? FloatingPanel(
-            contentRect: NSRect(origin: origin, size: size)
-        )
-        panel.onEscape = { [weak self] in self?.hideAssistant() }
-        panel.onResizeEnd = { size in
-            UserDefaults.standard.set(size.width, forKey: PreferenceKey.assistantWidth)
-            UserDefaults.standard.set(size.height, forKey: PreferenceKey.assistantHeight)
-        }
-        panel.minSize = NSSize(
-            width: PicoTheme.assistantMinWidth,
-            height: PicoTheme.assistantMinHeight
-        )
-        panel.setSwiftUIContent(root)
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
-        panel.makeKeyAndOrderFrontActivating()
-        assistantPanel = panel
+        popoverContent = .ask
+        menuBar.present(root)
         setPetState(.listening)
     }
 
     func toggleAssistant() {
-        if assistantPanel?.isVisible == true {
+        if menuBar.isPopoverShown {
             hideAssistant()
+            if popoverContent == .history {
+                menuBar.dismissPopover()
+                popoverContent = nil
+            }
         } else {
             showAssistant()
         }
@@ -138,8 +131,34 @@ final class AppCoordinator {
         if assistantViewModel?.isSending == true {
             assistantViewModel?.cancel()
         }
-        assistantPanel?.orderOut(nil)
+        if popoverContent == .ask {
+            menuBar.dismissPopover()
+            popoverContent = nil
+        }
         setPetState(.idle, force: true)
+    }
+
+    func popoverWasDismissed() {
+        popoverContent = nil
+        if assistantViewModel?.isSending == true {
+            assistantViewModel?.cancel()
+        }
+        setPetState(.idle, force: true)
+    }
+
+    func undoLastRewrite() {
+        guard !isPaused else { return }
+        Task {
+            try? await environment.textProcessor.undoLast()
+        }
+    }
+
+    func hotkeysDidChange() {
+        guard !isPaused else { return }
+        environment.hotkeyManager.register()
+        hotkeyAskFailed = environment.hotkeyManager.registrationFailedAsk
+        hotkeyTextFailed = environment.hotkeyManager.registrationFailedText
+        hotkeyRegistrationFailed = hotkeyAskFailed || hotkeyTextFailed
     }
 
     func showTextActions() {
@@ -215,45 +234,24 @@ final class AppCoordinator {
         let root = HistoryView(
             viewModel: viewModel,
             onSelect: { [weak self] conversation in
-                self?.hideHistory()
                 self?.showAssistant(conversation: conversation)
             },
             onClose: { [weak self] in self?.hideHistory() }
         )
-
-        let panel = historyPanel ?? FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 420)
-        )
-        panel.onEscape = { [weak self] in self?.hideHistory() }
-        panel.setSwiftUIContent(root)
-        let size = NSSize(width: 320, height: 420)
-        let origin: CGPoint
-        if let assistantFrame = assistantPanel?.frame, assistantPanel?.isVisible == true {
-            let screen = assistantPanel?.screen ?? ScreenManager.primaryScreen
-            var x = assistantFrame.minX - size.width - PicoTheme.panelGap
-            if x < screen.visibleFrame.minX + PicoTheme.screenMargin {
-                x = assistantFrame.maxX + PicoTheme.panelGap
-            }
-            origin = CGPoint(
-                x: x,
-                y: max(screen.visibleFrame.minY + PicoTheme.screenMargin, assistantFrame.maxY - size.height)
-            )
-        } else {
-            origin = panelOriginAttachedToMenuBar(size: size)
-        }
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
-        panel.makeKeyAndOrderFrontActivating()
-        historyPanel = panel
+        popoverContent = .history
+        menuBar.present(root)
     }
 
     func hideHistory() {
-        historyPanel?.orderOut(nil)
+        guard popoverContent == .history else { return }
+        menuBar.dismissPopover()
+        popoverContent = nil
     }
 
     func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 460, height: 520),
+                contentRect: NSRect(x: 0, y: 0, width: 480, height: 680),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -337,39 +335,54 @@ final class AppCoordinator {
         menuBar.setMascot(state: petState, paused: isPaused)
     }
 
-    private func assistantSize() -> CGSize {
-        let defaults = UserDefaults.standard
-        let width = defaults.object(forKey: PreferenceKey.assistantWidth) as? Double
-            ?? PicoTheme.assistantDefaultWidth
-        let height = defaults.object(forKey: PreferenceKey.assistantHeight) as? Double
-            ?? PicoTheme.assistantDefaultHeight
-        return CGSize(width: width, height: height)
+    func confirmScreenAction(_ summary: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            if let existing = self.confirmContinuation {
+                existing.resume(returning: false)
+            }
+            self.confirmContinuation = continuation
+            let panel = self.confirmPanel ?? FloatingPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 380, height: 220),
+                styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView]
+            )
+            panel.allowsKeyFocus = true
+            panel.onEscape = { [weak self] in self?.finishScreenConfirm(false) }
+            panel.setSwiftUIContent(
+                ScreenActionConfirmView(
+                    summary: summary,
+                    onAllow: { [weak self] in self?.finishScreenConfirm(true) },
+                    onDeny: { [weak self] in self?.finishScreenConfirm(false) }
+                )
+            )
+            let size = NSSize(width: 380, height: 220)
+            let origin = MenuBarPanelPlacement.origin(
+                anchor: self.menuBar.anchorScreenRect() ?? CGRect(
+                    x: ScreenManager.primaryScreen.visibleFrame.midX,
+                    y: ScreenManager.primaryScreen.visibleFrame.maxY,
+                    width: 0,
+                    height: 0
+                ),
+                panelSize: size,
+                visibleFrame: (self.menuBar.anchorScreenRect().flatMap { anchor in
+                    NSScreen.screens.first { $0.frame.intersects(anchor) }?.visibleFrame
+                }) ?? ScreenManager.primaryScreen.visibleFrame,
+                gap: PicoTheme.panelGap
+            )
+            panel.setFrame(NSRect(origin: origin, size: size), display: true)
+            panel.makeKeyAndOrderFrontActivating()
+            self.confirmPanel = panel
+        }
     }
 
-    /// Ask and History open under the menu-bar mascot instead of a desktop overlay.
-    private func panelOriginAttachedToMenuBar(size: CGSize) -> CGPoint {
-        let fallbackScreen = ScreenManager.screenContainingFrontmostApp()
-        guard let anchor = menuBar.anchorScreenRect() else {
-            let visible = fallbackScreen.visibleFrame
-            return MenuBarPanelPlacement.origin(
-                anchor: CGRect(x: visible.midX, y: visible.maxY, width: 0, height: 0),
-                panelSize: size,
-                visibleFrame: visible,
-                gap: PicoTheme.screenMargin
-            )
-        }
-        let screen = NSScreen.screens.first(where: { $0.frame.intersects(anchor) }) ?? fallbackScreen
-        return MenuBarPanelPlacement.origin(
-            anchor: anchor,
-            panelSize: size,
-            visibleFrame: screen.visibleFrame,
-            gap: PicoTheme.panelGap
-        )
+    private func finishScreenConfirm(_ allowed: Bool) {
+        confirmPanel?.orderOut(nil)
+        confirmContinuation?.resume(returning: allowed)
+        confirmContinuation = nil
     }
 
     private func positionTextPanel(_ panel: FloatingPanel) {
         let screen = ScreenManager.screenContainingFrontmostApp()
-        let size = NSSize(width: 320, height: 300)
+        let size = NSSize(width: 360, height: 520)
         let visible = screen.visibleFrame
         var origin = CGPoint(
             x: visible.midX - size.width / 2,

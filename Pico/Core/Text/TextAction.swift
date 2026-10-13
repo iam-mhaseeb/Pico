@@ -8,6 +8,9 @@ enum TextAction: String, CaseIterable, Identifiable, Sendable {
     case makeCasual
     case makeShorter
     case improve
+    case reply
+    case translate
+    case bullets
 
     var id: String { rawValue }
 
@@ -19,6 +22,9 @@ enum TextAction: String, CaseIterable, Identifiable, Sendable {
         case .makeCasual: return "Make casual"
         case .makeShorter: return "Make shorter"
         case .improve: return "Improve"
+        case .reply: return "Write a reply"
+        case .translate: return "Translate"
+        case .bullets: return "Make bullets"
         }
     }
 
@@ -30,6 +36,9 @@ enum TextAction: String, CaseIterable, Identifiable, Sendable {
         case .makeCasual: return "face.smiling"
         case .makeShorter: return "scissors"
         case .improve: return "arrow.up.circle"
+        case .reply: return "arrowshape.turn.up.left"
+        case .translate: return "character.bubble"
+        case .bullets: return "list.bullet"
         }
     }
 }

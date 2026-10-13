@@ -9,7 +9,11 @@ final class PromptTemplatesTests: XCTestCase {
             PromptTemplates.makeProfessional(text: "hello"),
             PromptTemplates.makeCasual(text: "hello"),
             PromptTemplates.shorten(text: "hello"),
-            PromptTemplates.improve(text: "hello")
+            PromptTemplates.improve(text: "hello"),
+            PromptTemplates.reply(text: "hello"),
+            PromptTemplates.translate(text: "hello"),
+            PromptTemplates.bullets(text: "hello"),
+            PromptTemplates.custom(instruction: "Make it warmer", text: "hello")
         ].map { ($0.instructions, $0.prompt) }
 
         for (instructions, prompt) in actions {

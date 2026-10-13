@@ -12,21 +12,65 @@ struct HistoryView: View {
             petState: .idle,
             onClose: onClose
         ) {
-            Group {
+            VStack(spacing: 0) {
+                TextField("Search history", text: $viewModel.query)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, PicoTheme.panelPadding)
+                    .padding(.top, 12)
+                historyBody
+            }
+        }
+        .frame(width: 360, height: 480)
+        .onAppear { viewModel.reload() }
+        .onExitCommand(perform: onClose)
+        .confirmationDialog(
+            "Delete this conversation?",
+            isPresented: Binding(
+                get: { viewModel.conversationPendingDelete != nil },
+                set: { if !$0 { viewModel.cancelDelete() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                viewModel.confirmDelete()
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelDelete()
+            }
+        }
+        .alert(
+            "Rename conversation",
+            isPresented: Binding(
+                get: { viewModel.conversationPendingRename != nil },
+                set: { if !$0 { viewModel.cancelRename() } }
+            )
+        ) {
+            TextField("Title", text: $viewModel.renameDraft)
+            Button("Save") { viewModel.confirmRename() }
+            Button("Cancel", role: .cancel) { viewModel.cancelRename() }
+        }
+    }
+
+    private var historyBody: some View {
+        Group {
                 if let loadError = viewModel.loadError {
                     Text(loadError)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.sections.isEmpty {
+                } else if viewModel.displayedSections.isEmpty {
                     EmptyStateView(
-                        title: "No conversations yet",
-                        message: "Ask me something and I’ll keep it here for you."
+                        title: viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ? "No conversations yet"
+                            : "No matches",
+                        message: viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ? "Ask me something and I’ll keep it here for you."
+                            : "Try a different word from the chat title."
                     )
                     .padding(.bottom, 12)
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
-                            ForEach(viewModel.sections) { section in
+                            ForEach(viewModel.displayedSections) { section in
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(section.title)
                                         .font(.caption.weight(.semibold))
@@ -63,6 +107,9 @@ struct HistoryView: View {
                                         }
                                         .buttonStyle(.plain)
                                         .contextMenu {
+                                            Button("Rename") {
+                                                viewModel.beginRename(conversation)
+                                            }
                                             Button("Delete", role: .destructive) {
                                                 viewModel.requestDelete(conversation)
                                             }
@@ -77,23 +124,5 @@ struct HistoryView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 320, height: 420)
-        .onAppear { viewModel.reload() }
-        .onExitCommand(perform: onClose)
-        .confirmationDialog(
-            "Delete this conversation?",
-            isPresented: Binding(
-                get: { viewModel.conversationPendingDelete != nil },
-                set: { if !$0 { viewModel.cancelDelete() } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                viewModel.confirmDelete()
-            }
-            Button("Cancel", role: .cancel) {
-                viewModel.cancelDelete()
-            }
-        }
     }
-}
+

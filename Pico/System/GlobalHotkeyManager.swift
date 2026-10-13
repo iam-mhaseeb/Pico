@@ -63,16 +63,18 @@ final class GlobalHotkeyManager {
             return
         }
 
+        let ask = HotkeyPreferences.loadAsk()
+        let text = HotkeyPreferences.loadText()
         registrationFailedAsk = !registerHotKey(
             id: .ask,
-            keyCode: UInt32(kVK_Space),
-            modifiers: UInt32(optionKey),
+            keyCode: UInt32(ask.keyCode),
+            modifiers: ask.modifiers,
             ref: &askHotKeyRef
         )
         registrationFailedText = !registerHotKey(
             id: .textActions,
-            keyCode: UInt32(kVK_Space),
-            modifiers: UInt32(optionKey | shiftKey),
+            keyCode: UInt32(text.keyCode),
+            modifiers: text.modifiers,
             ref: &textHotKeyRef
         )
         isRegistered = !registrationFailedAsk || !registrationFailedText

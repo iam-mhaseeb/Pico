@@ -11,7 +11,10 @@ struct HistorySection: Identifiable {
 @Observable
 final class HistoryViewModel {
     var sections: [HistorySection] = []
+    var query = ""
     var conversationPendingDelete: Conversation?
+    var conversationPendingRename: Conversation?
+    var renameDraft = ""
     var loadError: String?
     private let store: ConversationStore
 
@@ -48,6 +51,41 @@ final class HistoryViewModel {
     func clearAll() {
         try? store.clearAll()
         reload()
+    }
+
+    func beginRename(_ conversation: Conversation) {
+        conversationPendingRename = conversation
+        renameDraft = conversation.title
+    }
+
+    func confirmRename() {
+        guard let conversation = conversationPendingRename else { return }
+        let title = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty {
+            try? store.setTitle(title, for: conversation)
+        }
+        conversationPendingRename = nil
+        reload()
+    }
+
+    func cancelRename() {
+        conversationPendingRename = nil
+    }
+
+    var displayedSections: [HistorySection] {
+        Self.filter(sections, query: query)
+    }
+
+    static func filter(_ sections: [HistorySection], query: String) -> [HistorySection] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return sections }
+        return sections.compactMap { section in
+            let matches = section.conversations.filter {
+                $0.title.localizedCaseInsensitiveContains(trimmed)
+            }
+            guard !matches.isEmpty else { return nil }
+            return HistorySection(id: section.id, title: section.title, conversations: matches)
+        }
     }
 
     private static func group(_ conversations: [Conversation]) -> [HistorySection] {

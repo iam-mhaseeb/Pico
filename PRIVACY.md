@@ -8,6 +8,11 @@ Pico is designed to keep your data on your Mac.
 - Screen captures used for **Look** (processed on-device; not written into conversation history)
 - Text Actions selections and rewrites
 - Conversation history stored with SwiftData on disk (you can turn **Keep History** off in Settings)
+- Saved prompts and shortcut choices, stored in preferences on this Mac
+
+## Update check
+
+If you choose **Check for updates** in Settings, Pico asks GitHub which release is newest. That request does not include your prompts, rewrites, screen contents, or history.
 
 ## What Pico does not do (v1)
 

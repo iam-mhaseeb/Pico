@@ -34,6 +34,9 @@ Ask Pico (`⌥ Space`) is global. Rows marked ✓ for Ask were frontmost when th
 - [x] Clipboard restore after text insert (string pasteboard) — TextEdit insert left `CLIPBOARD_MARKER_PICO` intact
 - [ ] Clipboard restore when pasteboard had an image
 - [ ] Pause Pico disables hotkeys and rests the menu bar face — an earlier pass verified this for the desktop pet (hotkeys off, Ask / Text Actions disabled)
+- [ ] Click, type, and key presses ask before they run
+- [ ] Copy, custom instruction, undo last rewrite
+- [ ] Safari, Chrome, Slack, Mail, and VS Code still need a pass on a Mac with those apps installed
 - [ ] Idle CPU with the menu bar mascot visible
 
 ## Also verified this pass

@@ -11,6 +11,7 @@ enum PromptTemplates {
     - You may receive a screen context block and you have tools: lookAtScreen, clickElement, typeText, pressKey, clickAt.
     - Use those tools only for screen questions or UI actions. Never capture or click during ordinary chat.
     - Prefer clickElement with a name or #id from accessibility. Use clickAt with OCR boxes only as a fallback.
+    - Clicks, typing, and key presses wait for the user to allow that step. If they stop it, say so and do not retry the same action.
     - Never type passwords or interact with secure text fields.
     - After acting, say briefly what you did. If a permission is missing, tell the user how to turn it on in Settings.
     """
@@ -57,6 +58,39 @@ enum PromptTemplates {
     static func shorten(text: String) -> (instructions: String, prompt: String) {
         let instructions = """
         Reduce unnecessary words while preserving the original meaning.
+        \(sharedTextConstraints)
+        """
+        return (instructions, text)
+    }
+
+    static func reply(text: String) -> (instructions: String, prompt: String) {
+        let instructions = """
+        Write a short, friendly reply to the supplied message.
+        \(sharedTextConstraints)
+        """
+        return (instructions, text)
+    }
+
+    static func translate(text: String) -> (instructions: String, prompt: String) {
+        let instructions = """
+        Translate the supplied text into clear English.
+        If it is already English, translate it into Spanish.
+        \(sharedTextConstraints)
+        """
+        return (instructions, text)
+    }
+
+    static func bullets(text: String) -> (instructions: String, prompt: String) {
+        let instructions = """
+        Turn the supplied text into a short bullet list. Keep the original meaning.
+        \(sharedTextConstraints)
+        """
+        return (instructions, text)
+    }
+
+    static func custom(instruction: String, text: String) -> (instructions: String, prompt: String) {
+        let instructions = """
+        Follow this instruction for the supplied text: \(instruction)
         \(sharedTextConstraints)
         """
         return (instructions, text)

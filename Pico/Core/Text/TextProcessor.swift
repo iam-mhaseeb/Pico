@@ -8,6 +8,9 @@ final class TextProcessor {
     private let aiService: AIService
     private let keyEvents: any KeyEventSynthesizing
     private var transformTask: Task<String, Error>?
+    private var undoRecord: RewriteUndo?
+
+    var canUndo: Bool { undoRecord != nil }
 
     init(
         accessibility: any AccessibilityProviding,
@@ -112,6 +115,25 @@ final class TextProcessor {
         }
     }
 
+    func transform(instruction: String, text: String) async throws -> String {
+        transformTask?.cancel()
+        let task = Task {
+            try await aiService.performCustom(instruction: instruction, on: text)
+        }
+        transformTask = task
+        do {
+            let result = try await task.value
+            transformTask = nil
+            return result
+        } catch is CancellationError {
+            transformTask = nil
+            throw AIError.cancelled
+        } catch {
+            transformTask = nil
+            throw error
+        }
+    }
+
     func transform(action: TextAction, text: String) async throws -> String {
         transformTask?.cancel()
         let task = Task {
@@ -135,6 +157,32 @@ final class TextProcessor {
         transformTask?.cancel()
         transformTask = nil
         aiService.cancelAsk(conversationID: nil)
+    }
+
+    func copyToClipboard(_ text: String) {
+        clipboard.writeString(text)
+    }
+
+    func rememberUndo(original: String, strategy: TextReplacementStrategy, sourceAppPID: pid_t?) {
+        undoRecord = RewriteUndo(original: original, strategy: strategy, sourceAppPID: sourceAppPID)
+    }
+
+    func undoLast() async throws {
+        guard let record = undoRecord else {
+            throw TextReplacementError.replaceFailed
+        }
+        undoRecord = nil
+        do {
+            try await insert(
+                result: record.original,
+                strategy: record.strategy,
+                pasteboardSnapshot: nil,
+                sourceAppPID: record.sourceAppPID
+            )
+        } catch {
+            undoRecord = record
+            throw error
+        }
     }
 
     func insert(
@@ -181,4 +229,10 @@ final class TextProcessor {
         _ = settled
         clipboard.restore(localSnapshot)
     }
+}
+
+struct RewriteUndo: Equatable, Sendable {
+    var original: String
+    var strategy: TextReplacementStrategy
+    var sourceAppPID: pid_t?
 }

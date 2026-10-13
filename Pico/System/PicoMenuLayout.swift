@@ -13,6 +13,7 @@ enum PicoMenuLayout {
         [
             "Ask Pico",
             "Text Actions",
+            "Undo last rewrite",
             "History",
             "Settings…",
             pauseTitle(isPaused: isPaused),

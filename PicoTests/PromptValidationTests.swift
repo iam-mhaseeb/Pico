@@ -137,7 +137,7 @@ final class AIErrorTests: XCTestCase {
 
 final class TextActionCatalogTests: XCTestCase {
     func testAllActionsHaveTitlesAndSymbols() {
-        XCTAssertEqual(TextAction.allCases.count, 6)
+        XCTAssertEqual(TextAction.allCases.count, 9)
         for action in TextAction.allCases {
             XCTAssertFalse(action.title.isEmpty)
             XCTAssertFalse(action.symbolName.isEmpty)

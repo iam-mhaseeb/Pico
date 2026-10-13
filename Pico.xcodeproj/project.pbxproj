@@ -84,6 +84,13 @@
 		F3DE97577261F0EF1B0AB601 /* ScreenActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C670B0861A865869DFD459B /* ScreenActionExecutor.swift */; };
 		F793C3519E4CD64C15670A70 /* PicoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7397DD7AE2835E9554C9FE2 /* PicoTheme.swift */; };
 		FB381286C318C4CF9B3CF786 /* PromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925089FA20FD9B7CF51D9F70 /* PromptTemplates.swift */; };
+		A11A00000000000000000011 /* HotkeyPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000001 /* HotkeyPreferences.swift */; };
+		A11A00000000000000000012 /* ScreenAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000002 /* ScreenAllowlist.swift */; };
+		A11A00000000000000000013 /* SavedPromptStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000003 /* SavedPromptStore.swift */; };
+		A11A00000000000000000014 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000004 /* UpdateChecker.swift */; };
+		A11A00000000000000000015 /* ShortcutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000005 /* ShortcutRecorder.swift */; };
+		A11A00000000000000000016 /* ScreenActionConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000006 /* ScreenActionConfirmView.swift */; };
+		A11A00000000000000000017 /* ProductExtrasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A00000000000000000007 /* ProductExtrasTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -176,6 +183,13 @@
 		F3B7843C679C2CB2FD5E3A62 /* ScreenAgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAgentTests.swift; sourceTree = "<group>"; };
 		F913A74DBECBC4B8E4120432 /* MacAIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAIProvider.swift; sourceTree = "<group>"; };
 		F93833BB19F868907BEF631A /* ScreenKeyPress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenKeyPress.swift; sourceTree = "<group>"; };
+		A11A00000000000000000001 /* HotkeyPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyPreferences.swift; sourceTree = "<group>"; };
+		A11A00000000000000000002 /* ScreenAllowlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAllowlist.swift; sourceTree = "<group>"; };
+		A11A00000000000000000003 /* SavedPromptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedPromptStore.swift; sourceTree = "<group>"; };
+		A11A00000000000000000004 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		A11A00000000000000000005 /* ShortcutRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutRecorder.swift; sourceTree = "<group>"; };
+		A11A00000000000000000006 /* ScreenActionConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenActionConfirmView.swift; sourceTree = "<group>"; };
+		A11A00000000000000000007 /* ProductExtrasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductExtrasTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -201,6 +215,7 @@
 				D216BAD1F9631012C5D30CF0 /* PetStateMachineTests.swift */,
 				1ECCEA049A1E85EA57D99584 /* PromptTemplatesTests.swift */,
 				77E7F321E2F260A97D3FFA56 /* PromptValidationTests.swift */,
+				A11A00000000000000000007 /* ProductExtrasTests.swift */,
 				F3B7843C679C2CB2FD5E3A62 /* ScreenAgentTests.swift */,
 				EF1E9B34E9F7D02D72F58528 /* ScreenIntentTests.swift */,
 				7C06E5C4133C89EED37BD738 /* ScreenManagerTests.swift */,
@@ -247,6 +262,10 @@
 				73D338B1BCFE6AB4E0C0CEF2 /* PermissionOpener.swift */,
 				73B1F38B1A81790AD8D91A58 /* PicoMenuLayout.swift */,
 				113E7324511326F563CE3F86 /* ScreenManager.swift */,
+				A11A00000000000000000004 /* UpdateChecker.swift */,
+				A11A00000000000000000003 /* SavedPromptStore.swift */,
+				A11A00000000000000000002 /* ScreenAllowlist.swift */,
+				A11A00000000000000000001 /* HotkeyPreferences.swift */,
 			);
 			path = System;
 			sourceTree = "<group>";
@@ -306,6 +325,7 @@
 			isa = PBXGroup;
 			children = (
 				D8FAF088E56E2B0A3ABB9105 /* SettingsView.swift */,
+				A11A00000000000000000005 /* ShortcutRecorder.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -391,6 +411,7 @@
 				7BDC5DD54626BD758E89F60E /* Settings */,
 				3D7D805228D3C65B8ADC5EB9 /* Shared */,
 				652728DB8851D814514E5EDB /* TextActions */,
+				A11A00000000000000000020 /* Screen */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -430,6 +451,14 @@
 				C95C0BD6E369F6FC6C9F2BA2 /* PicoTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A11A00000000000000000020 /* Screen */ = {
+			isa = PBXGroup;
+			children = (
+				A11A00000000000000000006 /* ScreenActionConfirmView.swift */,
+			);
+			path = Screen;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -582,6 +611,12 @@
 				86B32C8CB69908ECF6D4D964 /* TextPreviewView.swift in Sources */,
 				C3D0B7D40BD66AA7DE5BE134 /* TextProcessor.swift in Sources */,
 				C350EE138253CA92F551F519 /* TextReplacement.swift in Sources */,
+				A11A00000000000000000011 /* HotkeyPreferences.swift in Sources */,
+				A11A00000000000000000012 /* ScreenAllowlist.swift in Sources */,
+				A11A00000000000000000013 /* SavedPromptStore.swift in Sources */,
+				A11A00000000000000000014 /* UpdateChecker.swift in Sources */,
+				A11A00000000000000000015 /* ShortcutRecorder.swift in Sources */,
+				A11A00000000000000000016 /* ScreenActionConfirmView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -607,6 +642,7 @@
 				3D1828AC42A4C7758B6CB1E7 /* TestModelContainerFactory.swift in Sources */,
 				B6EFFA4E6E3BA9B2F910A45C /* TextActionMenuViewModelTests.swift in Sources */,
 				6871C5AD847A53253A8CC2F9 /* TextProcessorCaptureTests.swift in Sources */,
+				A11A00000000000000000017 /* ProductExtrasTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

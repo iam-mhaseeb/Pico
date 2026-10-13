@@ -36,6 +36,12 @@ struct AssistantView: View {
                     .frame(maxHeight: 180)
                 }
 
+                if !viewModel.savedPrompts.isEmpty || !viewModel.input.isEmpty {
+                    savedPromptBar
+                        .padding(.horizontal, PicoTheme.panelPadding)
+                        .padding(.top, 8)
+                }
+
                 ChatView(
                     messages: viewModel.messages,
                     onCopy: { viewModel.copy($0) },
@@ -81,6 +87,45 @@ struct AssistantView: View {
             }
         }
         .onExitCommand(perform: onClose)
+    }
+
+    private var savedPromptBar: some View {
+        HStack(spacing: 8) {
+            Menu {
+                if viewModel.savedPrompts.isEmpty {
+                    Button("No saved prompts yet") {}
+                        .disabled(true)
+                }
+                ForEach(viewModel.savedPrompts) { prompt in
+                    Button(prompt.title) {
+                        viewModel.input = prompt.text
+                    }
+                }
+                if !viewModel.savedPrompts.isEmpty {
+                    Divider()
+                    Menu("Remove") {
+                        ForEach(viewModel.savedPrompts) { prompt in
+                            Button(prompt.title) {
+                                viewModel.deleteSavedPrompt(prompt)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label("Saved", systemImage: "text.badge.star")
+                    .font(.caption)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+
+            Spacer()
+
+            Button("Save prompt") {
+                viewModel.saveCurrentPrompt()
+            }
+            .font(.caption)
+            .disabled(viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
     }
 
     private func screenPermissionBanner(message: String, actionTitle: String, action: @escaping () -> Void) -> some View {

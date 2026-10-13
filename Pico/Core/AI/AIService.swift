@@ -72,6 +72,26 @@ final class AIService {
         return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
     }
 
+    func reply(_ text: String) async throws -> String {
+        let pair = PromptTemplates.reply(text: text)
+        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
+    }
+
+    func translate(_ text: String) async throws -> String {
+        let pair = PromptTemplates.translate(text: text)
+        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
+    }
+
+    func bullets(_ text: String) async throws -> String {
+        let pair = PromptTemplates.bullets(text: text)
+        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
+    }
+
+    func performCustom(instruction: String, on text: String) async throws -> String {
+        let pair = PromptTemplates.custom(instruction: instruction, text: text)
+        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
+    }
+
     func perform(action: TextAction, on text: String) async throws -> String {
         switch action {
         case .rewrite:
@@ -86,6 +106,12 @@ final class AIService {
             return try await shorten(text)
         case .improve:
             return try await improve(text)
+        case .reply:
+            return try await reply(text)
+        case .translate:
+            return try await translate(text)
+        case .bullets:
+            return try await bullets(text)
         }
     }
 }

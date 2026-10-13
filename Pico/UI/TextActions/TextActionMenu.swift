@@ -35,13 +35,14 @@ struct TextActionMenu: View {
                     .frame(width: 260, height: 140)
                 case .preview:
                     TextPreviewView(
-                        actionTitle: viewModel.selectedAction?.title ?? "Result",
+                        actionTitle: viewModel.selectedAction?.title ?? "Custom",
                         original: viewModel.originalText,
                         suggested: viewModel.suggestedText,
                         onCancel: {
                             viewModel.cancel()
                             onClose()
                         },
+                        onCopy: { viewModel.copySuggestion() },
                         onInsert: {
                             Task {
                                 let succeeded = await viewModel.insert()
@@ -100,30 +101,46 @@ struct TextActionMenu: View {
     }
 
     private var actionList: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(TextAction.allCases) { action in
-                Button {
-                    Task { await viewModel.run(action) }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: action.symbolName)
-                            .foregroundStyle(PicoTheme.accent)
-                            .frame(width: 18)
-                        Text(action.title)
-                        Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(TextAction.allCases) { action in
+                    Button {
+                        Task { await viewModel.run(action) }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: action.symbolName)
+                                .foregroundStyle(PicoTheme.accent)
+                                .frame(width: 18)
+                            Text(action.title)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: PicoTheme.controlCornerRadius, style: .continuous)
+                                .fill(Color.primary.opacity(0.04))
+                        )
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: PicoTheme.controlCornerRadius, style: .continuous)
-                            .fill(Color.primary.opacity(0.04))
-                    )
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+
+                Text("Or tell Pico what to do")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 8)
+
+                TextField("Make this a Slack reply", text: $viewModel.customInstruction)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { Task { await viewModel.runCustom() } }
+
+                Button("Use this instruction") {
+                    Task { await viewModel.runCustom() }
+                }
+                .disabled(viewModel.customInstruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+            .padding(PicoTheme.panelPadding)
         }
-        .padding(PicoTheme.panelPadding)
-        .frame(width: 280)
+        .frame(width: 320, height: 380)
     }
 
     private var permissionView: some View {

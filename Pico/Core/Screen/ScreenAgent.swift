@@ -19,6 +19,10 @@ final class ScreenAgent {
 
     var hideChrome: (() async -> Void)?
     var restoreChrome: (() async -> Void)?
+    /// Ask before a click, key press, or typing. Nil means the action is allowed.
+    var confirmAction: ((String) async -> Bool)?
+
+    private var targetBundleID: String?
 
     private let capturer: any ScreenCapturing
     private let ocr: any ScreenOCRProviding
@@ -59,6 +63,7 @@ final class ScreenAgent {
         else { return }
         targetPID = app.processIdentifier
         targetName = app.localizedName
+        targetBundleID = app.bundleIdentifier
     }
 
     func beginTurn(enabled: Bool) {
@@ -167,7 +172,9 @@ final class ScreenAgent {
     }
 
     func clickElement(target: String) async -> String {
-        if let error = allowAction() { return error }
+        guard turnEnabled || sessionEnabled else {
+            return "Screen help is off. The user didn’t ask to control the screen."
+        }
 
         if lastSnapshot == nil {
             _ = await look()
@@ -186,6 +193,9 @@ final class ScreenAgent {
             return "That element is no longer available. Ask me to look at the screen again."
         }
 
+        if let denied = await authorize("Click “\(node.title)” in \(resolvedTargetName())") {
+            return denied
+        }
         await prepareForAction()
         let ok = actions.press(element: element)
         await finishAction()
@@ -199,7 +209,10 @@ final class ScreenAgent {
     func typeText(_ text: String, field: String) async -> String {
         let clipped = String(text.prefix(ScreenActionExecutor.maxTypeCharacters))
         guard !clipped.isEmpty else { return "Nothing to type." }
-        if let error = allowAction() { return error }
+        let fieldName = field.isEmpty ? "the focused field" : field
+        if let denied = await authorize("Type into \(fieldName) in \(resolvedTargetName())") {
+            return denied
+        }
 
         if lastSnapshot == nil {
             _ = await look()
@@ -230,7 +243,9 @@ final class ScreenAgent {
     }
 
     func pressKey(_ spec: String) async -> String {
-        if let error = allowAction() { return error }
+        if let denied = await authorize("Press \(spec) in \(resolvedTargetName())") {
+            return denied
+        }
         do {
             await prepareForAction()
             try actions.pressKey(spec)
@@ -245,7 +260,9 @@ final class ScreenAgent {
     }
 
     func clickAt(x: Double, y: Double) async -> String {
-        if let error = allowAction() { return error }
+        if let denied = await authorize("Click a point on the screen in \(resolvedTargetName())") {
+            return denied
+        }
         let bounds = lastDisplayBounds.isNull || lastDisplayBounds.isEmpty
             ? CGDisplayBounds(CGMainDisplayID())
             : lastDisplayBounds
@@ -257,8 +274,8 @@ final class ScreenAgent {
         return String(format: "Clicked at (%.2f, %.2f).", min(max(x, 0), 1), min(max(y, 0), 1))
     }
 
-    /// Returns an error message when the action must not run; otherwise nil.
-    private func allowAction() -> String? {
+    /// Returns an error message when the action must not run. Confirms with the user first.
+    private func authorize(_ summary: String) async -> String? {
         guard turnEnabled || sessionEnabled else {
             return "Screen help is off. The user didn’t ask to control the screen."
         }
@@ -270,8 +287,29 @@ final class ScreenAgent {
             accessibilityNeeded = true
             return "Pico needs Accessibility permission to click, type, or press keys."
         }
+        if let blocked = ScreenAllowlist.blockMessage(bundleID: currentBundleID(), appName: resolvedTargetName()) {
+            return blocked
+        }
+        if let confirmAction {
+            let allowed = await confirmAction(summary)
+            if !allowed {
+                return "You stopped that. Pico did not \(summary.prefix(1).lowercased())\(summary.dropFirst())."
+            }
+        }
         actionsThisTurn += 1
         return nil
+    }
+
+    private func currentBundleID() -> String? {
+        if let targetPID,
+           let app = NSRunningApplication(processIdentifier: targetPID),
+           !app.isTerminated {
+            return app.bundleIdentifier ?? targetBundleID
+        }
+        if let front = NSWorkspace.shared.frontmostApplication, front.processIdentifier != picoPID {
+            return front.bundleIdentifier
+        }
+        return targetBundleID
     }
 
     private func prepareForAction() async {

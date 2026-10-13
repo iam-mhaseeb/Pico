@@ -137,7 +137,7 @@ struct OnboardingView: View {
             PetFaceView(state: .idle, size: 72)
             Text("Pico lives in your menu bar")
                 .font(.title2.weight(.semibold))
-            Text("Click the Pico face to ask, rewrite text, or open history. Pico itself stays in the menu bar.")
+            Text("Click the face to ask. Right-click it for history, settings, and shortcuts. You can change the shortcuts in Settings.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }

@@ -27,6 +27,7 @@ final class AssistantViewModel {
     private var streamSaveCounter = 0
 
     var onPetState: ((PetState) -> Void)?
+    var savedPrompts: [SavedPrompt] = SavedPromptStore.load()
 
     var headerPetState: PetState {
         if isSending {
@@ -39,6 +40,19 @@ final class AssistantViewModel {
         self.aiService = aiService
         self.store = store
         self.screenAgent = screenAgent
+    }
+
+    func saveCurrentPrompt() {
+        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        savedPrompts = SavedPromptStore.add(
+            title: ConversationTitleGenerator.title(from: text),
+            text: text
+        )
+    }
+
+    func deleteSavedPrompt(_ prompt: SavedPrompt) {
+        savedPrompts = SavedPromptStore.remove(id: prompt.id)
     }
 
     func newConversation() {

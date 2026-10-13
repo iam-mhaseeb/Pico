@@ -6,9 +6,9 @@ Pico is a local-first macOS menu bar app with a small mascot, powered by on-devi
 
 ## What it does
 
-1. **Ask Pico** (`⌥ Space`) — chat from anywhere. Ask it to look at your screen or act on the UI when you need hands-on help.
-2. **Text Actions** (`⌥ ⇧ Space`) — select text, preview a rewrite, then Insert.
-3. **Menu bar mascot** — Pico’s face lives in the menu bar and reacts while Ask or Text Actions are working.
+1. **Ask Pico** (click the face, or `⌥ Space`) — chat from the menu bar. Ask it to look at your screen or act on the UI when you need hands-on help. Pico asks before it clicks or types.
+2. **Text Actions** (`⌥ ⇧ Space`) — select text, preview a rewrite, then Copy or Insert. You can also give Pico your own instruction.
+3. **Menu bar mascot** — a pebble with two eyes. Click it to ask. Right-click for the menu.
 
 ## Requirements
 
@@ -26,10 +26,14 @@ Pico is a local-first macOS menu bar app with a small mascot, powered by on-devi
 - Streaming Ask panel with markdown
 - **Look at screen** — on-device capture + UI reading; can click, type, or press keys when you ask
 - Conversation history (SwiftData; optional Keep History)
-- Text actions: Rewrite, Fix grammar, Professional, Casual, Shorter, Improve
+- Text actions: Rewrite, Fix grammar, Professional, Casual, Shorter, Improve, Reply, Translate, Bullets, plus your own instruction
+- Copy or Insert a rewrite, and undo the last insert from the menu
+- Saved prompts, searchable history, and rename
+- Shortcuts you can change
+- Screen control asks first, and can be limited to apps you choose
+- Update check against GitHub releases (no chats or screens are sent)
 - Menu bar mascot that reacts while Pico is listening, thinking, or done
 - Launch at login, pause/resume
-- Multi-monitor aware placement
 
 ## Build & run
 
@@ -63,8 +67,8 @@ On first launch, grant Accessibility (and Screen Recording when prompted for Loo
 
 | Shortcut | Action |
 | --- | --- |
-| `⌥ Space` | Toggle Ask Pico |
-| `⌥ ⇧ Space` | Text Actions |
+| `⌥ Space` | Toggle Ask Pico (default; change it in Settings) |
+| `⌥ ⇧ Space` | Text Actions (default; change it in Settings) |
 | `Esc` | Close active panel |
 | `Enter` | Send (Ask) |
 | `⇧ Enter` | New line |
@@ -98,6 +102,20 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and fo
 ## Compatibility
 
 Manual Text Actions / Ask targets are tracked in [COMPATIBILITY.md](COMPATIBILITY.md).
+
+## Updates
+
+Settings → **Check for updates** asks GitHub which release is newest. It does not send prompts, rewrites, or screen contents.
+
+A downloadable build needs to be signed and notarized on a Mac with an Apple Developer account:
+
+```bash
+codesign --deep --force --options runtime --sign "Developer ID Application: Your Name" Pico.app
+xcrun notarytool submit Pico.zip --apple-id you@example.com --team-id TEAMID --password APP_PASSWORD --wait
+xcrun stapler staple Pico.app
+```
+
+Publish that build as a GitHub release. The in-app check reads `https://api.github.com/repos/iam-mhaseeb/Pico/releases/latest`.
 
 ## License
 

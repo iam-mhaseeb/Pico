@@ -9,18 +9,27 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Pico runs from the menu bar. The mascot is the menu bar face and still reacts during Ask and Text Actions
-- Ask and History open under the menu bar icon
+- Pico runs from the menu bar. Click the face to ask. Right-click for the menu
+- The face is a pebble with two capsule eyes, in the spirit of the Grok Bot mark, with a light rim so it stays visible in the menu bar
+- Ask and History open from the menu bar icon
+- Shortcuts can be changed in Settings
+
+### Added
+
+- Copy as well as Insert, a custom writing instruction, reply, translate, and bullets
+- Undo last rewrite
+- Saved prompts
+- Search and rename in History
+- Pico asks before it clicks, types, or presses a key
+- Optional list of apps Pico is allowed to control
+- Check for updates against GitHub releases
+- Open-source project docs: LICENSE (MIT), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, PRIVACY, issue/PR templates
+- Screen prompts that ask Pico to read on-screen instructions trigger Look
 
 ### Removed
 
 - Desktop overlay
 - Mascot extras: drag, pet, feed, shoo, toys, Ghost Mode, edge snap, wander, care stats, outfits, speech, and pet tips
-
-### Added
-
-- Open-source project docs: LICENSE (MIT), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, PRIVACY, issue/PR templates
-- Screen prompts that ask Pico to read on-screen instructions trigger Look
 
 ## [1.0.0] - 2026-08
 

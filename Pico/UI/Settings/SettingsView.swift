@@ -7,6 +7,13 @@ struct SettingsView: View {
 
     @State private var launchError: String?
     @State private var confirmClear = false
+    @State private var askChord = HotkeyPreferences.loadAsk()
+    @State private var textChord = HotkeyPreferences.loadText()
+    @State private var allowlistOn = ScreenAllowlist.isEnabled()
+    @State private var allowedApps = ScreenAllowlist.apps()
+    @State private var updateMessage: String?
+    @State private var updateURL: URL?
+    @State private var checkingUpdate = false
 
     var body: some View {
         ScrollView {
@@ -30,18 +37,87 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text("Pico stays in the menu bar. Pause turns off shortcuts and lets the face rest.")
+                Text("Click the Pico face to ask. Right-click it for the menu. Pause turns off shortcuts and lets the face rest.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(checkingUpdate ? "Checking…" : "Check for updates") {
+                    checkingUpdate = true
+                    Task {
+                        let result = await UpdateChecker.check()
+                        updateMessage = result.message
+                        updateURL = result.releaseURL
+                        checkingUpdate = false
+                    }
+                }
+                .disabled(checkingUpdate)
+                if let updateMessage {
+                    Text(updateMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let updateURL {
+                        Link("Open the release", destination: updateURL)
+                            .font(.caption)
+                    }
+                }
+                Text("The check asks GitHub which release is newest. It does not send your chats or screen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("Keyboard") {
-                LabeledContent("Ask Pico", value: "⌥ Space")
-                LabeledContent("Text Actions", value: "⌥ ⇧ Space")
+                ShortcutRecorder(title: "Ask Pico", chord: $askChord) { chord in
+                    HotkeyPreferences.saveAsk(chord)
+                    coordinator.hotkeysDidChange()
+                }
+                ShortcutRecorder(title: "Text Actions", chord: $textChord) { chord in
+                    HotkeyPreferences.saveText(chord)
+                    coordinator.hotkeysDidChange()
+                }
+                Text("Use Option, Control, or Command with a key. Esc cancels recording.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if coordinator.hotkeyRegistrationFailed {
                     Text(hotkeyFailureMessage)
                         .font(.caption)
                         .foregroundStyle(.orange)
+                }
+            }
+
+            Section("Screen control") {
+                Text("Before Pico clicks, types, or presses a key, it asks you to allow that step.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Only control chosen apps", isOn: $allowlistOn)
+                    .onChange(of: allowlistOn) { _, newValue in
+                        ScreenAllowlist.setEnabled(newValue)
+                    }
+                if allowlistOn {
+                    if allowedApps.isEmpty {
+                        Text("No apps chosen yet. Pico will refuse clicks and typing until you add one.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(allowedApps) { app in
+                        HStack {
+                            Text(app.name)
+                            Spacer()
+                            Button("Remove") {
+                                allowedApps.removeAll { $0.bundleID == app.bundleID }
+                                ScreenAllowlist.save(allowedApps)
+                            }
+                        }
+                    }
+                    Menu("Add running app") {
+                        ForEach(ScreenAllowlist.runningApps()) { app in
+                            Button(app.name) {
+                                guard !allowedApps.contains(where: { $0.bundleID == app.bundleID }) else { return }
+                                allowedApps.append(app)
+                                allowedApps.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                                ScreenAllowlist.save(allowedApps)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -77,7 +153,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         }
-        .frame(width: 460, height: 520)
+        .frame(width: 480, height: 680)
         .onAppear {
             launchAtLogin = LaunchAtLoginManager.isEnabled
             if LaunchAtLoginManager.requiresApproval {
