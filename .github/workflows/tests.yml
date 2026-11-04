@@ -25,6 +25,9 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Test release notes script
+        run: .github/scripts/test-release-notes.sh
+
       - name: Install XcodeGen
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
 

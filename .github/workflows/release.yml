@@ -45,6 +45,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Tags with a hyphen (v1.0.0-rc1, v1.1.0-beta2) are pre-releases; plain v1.2.3 is stable.
+          flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            flags+=(--prerelease)
+          else
+            flags+=(--latest)
+          fi
+
+          # Release notes come from CHANGELOG.md: the "## [<version>]" section if there is one,
+          # otherwise "## [Unreleased]". If neither has content, fall back to generated notes.
+          notes="$(.github/scripts/release-notes.sh "$GITHUB_REF_NAME")"
+          if [ -n "$notes" ]; then
+            {
+              printf '%s\n\n' "$notes"
+              printf -- '---\n\n'
+              printf 'Download **Pico.zip** below, unzip it, and move **Pico** to Applications. '
+              printf 'The app is not signed or notarized yet, so on first launch open '
+              printf '**System Settings → Privacy & Security** and choose **Open Anyway**.\n'
+            } > release-notes.md
+            notes_flags=(--notes-file release-notes.md)
+          else
+            notes_flags=(--generate-notes)
+          fi
+
+          # Only create the release if it does not exist; never overwrite notes someone edited.
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --generate-notes
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${notes_flags[@]}" "${flags[@]}"
           gh release upload "$GITHUB_REF_NAME" Pico.zip --clobber
