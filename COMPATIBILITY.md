@@ -4,7 +4,7 @@ Verified **17 Aug 2026** on a built-in Liquid Retina XDR (single display), macOS
 
 Legend: **✓** verified · blank = not tested this pass.
 
-| App            | Ask hotkey | Capture selection | Preview | Insert | Notes |
+| App            | Hotkey | Capture selection | Preview | Insert | Notes |
 | -------------- | ---------- | ----------------- | ------- | ------ | ----- |
 | Safari         |            |                   |         |        |       |
 | Chrome         |            |                   |         |        | Brave is installed; Chromium not exercised |
@@ -17,28 +17,28 @@ Legend: **✓** verified · blank = not tested this pass.
 | TextEdit       | ✓          | ✓                 | ✓       | ✓      | Grammar fix inserted (`sentance`/`grammer` → `sentence`/`grammar`). Source app kept focus. Clipboard restored after insert |
 | Microsoft Word |            |                   |         |        |       |
 | Outlook        |            |                   |         |        |       |
-| Finder         | ✓          |                   |         |        | `⌥ Space` opened Ask. No text field — Text Actions shows empty/permission UI, not a capture |
+| Finder         | ✓          |                   |         |        | Hotkey works. No text field — Text Actions shows empty/permission UI, not a capture |
 
-Ask Pico (`⌥ Space`) is global. Rows marked ✓ for Ask were frontmost when the hotkey or menu was used successfully.
+Text Actions (`⌥ ⇧ Space`) is global. Rows marked ✓ for Hotkey were frontmost when the hotkey or menu was used successfully.
+
+> Results below predate the move to a Text Actions-only app (Ask, History and screen help were removed) and should be re-verified.
 
 ## System scenarios
 
 - [ ] Dark mode
 - [ ] Light mode
-- [ ] Multiple monitors (Ask opens on active display) — this machine had one display
-- [ ] Unplug display (menu bar mascot stays in the menu bar; Ask follows the active display)
+- [ ] Multiple monitors (Text Actions panel opens on the active display) — this machine had one display
+- [ ] Unplug display (menu bar mascot stays in the menu bar)
 - [ ] Sleep / wake (hotkeys still work)
 - [x] Launch at login — Settings toggle on; login item not proven by a reboot
 - [x] Accessibility off → permission UI — after a Debug rebuild, TCC dropped and Text Actions showed “Accessibility needed”
-- [ ] Apple Intelligence off → friendly error — Intelligence was available; on-device Ask replied `PING`
+- [ ] Apple Intelligence off → friendly error — Intelligence was available; on-device model replied
 - [x] Clipboard restore after text insert (string pasteboard) — TextEdit insert left `CLIPBOARD_MARKER_PICO` intact
 - [ ] Clipboard restore when pasteboard had an image
-- [ ] Pause Pico disables hotkeys and rests the menu bar face — an earlier pass verified this for the desktop pet (hotkeys off, Ask / Text Actions disabled)
+- [ ] Pause Pico disables hotkeys and rests the menu bar face — an earlier pass verified this for the desktop pet (hotkey off, Text Actions disabled)
 - [ ] Idle CPU with the menu bar mascot visible
 
 ## Also verified this pass
 
-- [x] Ask multi-turn context (follow-up still answered `PING`)
-- [x] History lists the conversation while Keep History is on
 - [x] Empty selection in TextEdit → “Select some text first” (after capture fix)
 - [x] Unit tests — 77 passing locally; GitHub Action runs them on PRs and pushes to `main`

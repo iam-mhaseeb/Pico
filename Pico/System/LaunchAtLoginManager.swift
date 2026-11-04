@@ -17,7 +17,9 @@ enum LaunchAtLoginManager {
         } else {
             try SMAppService.mainApp.unregister()
         }
-        UserDefaults.standard.set(enabled, forKey: PreferenceKey.launchAtLogin)
-        return isEnabled
+        // Store what the system actually reports (e.g. requiresApproval is not "enabled").
+        let actual = isEnabled
+        UserDefaults.standard.set(actual, forKey: PreferenceKey.launchAtLogin)
+        return actual
     }
 }

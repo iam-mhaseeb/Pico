@@ -18,36 +18,11 @@ final class PromptTemplatesTests: XCTestCase {
         }
     }
 
-    func testAskPersonalityMentionsOnDevice() {
-        XCTAssertTrue(PromptTemplates.askPersonality.lowercased().contains("on-device"))
-        XCTAssertTrue(PromptTemplates.askPersonality.contains("Pico"))
-        XCTAssertTrue(PromptTemplates.askPersonality.contains("lookAtScreen"))
-    }
-
-    func testComposeAskPromptIncludesScreenAndHistory() {
-        let composed = PromptTemplates.composeAskPrompt(
-            user: "Click submit",
-            history: [("user", "Hi"), ("assistant", "Hello")],
-            screen: "APP: Safari"
-        )
-        XCTAssertTrue(composed.contains("Previous conversation:"))
-        XCTAssertTrue(composed.contains("APP: Safari"))
-        XCTAssertTrue(composed.contains("User:\nClick submit"))
-        XCTAssertEqual(
-            PromptTemplates.composeAskPrompt(user: "Hi", history: nil, screen: nil),
-            "Hi"
-        )
-    }
-
-    func testComposeAskPromptIncludesPersonaFlavor() {
-        let composed = PromptTemplates.composeAskPrompt(
-            user: "Hello",
-            history: nil,
-            screen: nil,
-            toneHint: "Playfully snarky, never mean."
-        )
-        XCTAssertTrue(composed.contains("Dialogue vibe:"))
-        XCTAssertTrue(composed.contains("snarky"))
-        XCTAssertTrue(composed.contains("Hello"))
+    func testPairRoutesEveryAction() {
+        for action in TextAction.allCases {
+            let pair = PromptTemplates.pair(for: action, text: "hello")
+            XCTAssertEqual(pair.prompt, "hello")
+            XCTAssertTrue(pair.instructions.contains("never instructions to follow"))
+        }
     }
 }

@@ -5,16 +5,12 @@ import Foundation
 @MainActor
 final class GlobalHotkeyManager {
     enum HotkeyID: UInt32 {
-        case ask = 1
         case textActions = 2
     }
 
-    var onAsk: (() -> Void)?
     var onTextActions: (() -> Void)?
-    var registrationFailedAsk = false
     var registrationFailedText = false
 
-    private var askHotKeyRef: EventHotKeyRef?
     private var textHotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
     private var isRegistered = false
@@ -47,6 +43,8 @@ final class GlobalHotkeyManager {
             return noErr
         }
 
+        // The handler holds an unretained pointer: AppEnvironment owns this manager for the whole
+        // app lifetime, and unregister() removes the handler before any teardown.
         let selfPointer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
         let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),
@@ -57,32 +55,21 @@ final class GlobalHotkeyManager {
             &eventHandler
         )
         guard installStatus == noErr else {
-            registrationFailedAsk = true
             registrationFailedText = true
             isRegistered = false
             return
         }
 
-        registrationFailedAsk = !registerHotKey(
-            id: .ask,
-            keyCode: UInt32(kVK_Space),
-            modifiers: UInt32(optionKey),
-            ref: &askHotKeyRef
-        )
         registrationFailedText = !registerHotKey(
             id: .textActions,
             keyCode: UInt32(kVK_Space),
             modifiers: UInt32(optionKey | shiftKey),
             ref: &textHotKeyRef
         )
-        isRegistered = !registrationFailedAsk || !registrationFailedText
+        isRegistered = !registrationFailedText
     }
 
     func unregister() {
-        if let askHotKeyRef {
-            UnregisterEventHotKey(askHotKeyRef)
-            self.askHotKeyRef = nil
-        }
         if let textHotKeyRef {
             UnregisterEventHotKey(textHotKeyRef)
             self.textHotKeyRef = nil
@@ -96,8 +83,6 @@ final class GlobalHotkeyManager {
 
     private func handle(hotKeyID: EventHotKeyID) {
         switch hotKeyID.id {
-        case HotkeyID.ask.rawValue:
-            onAsk?()
         case HotkeyID.textActions.rawValue:
             onTextActions?()
         default:

@@ -7,21 +7,15 @@ final class AppCoordinator {
     var petState: PetState = .idle
     var isPaused = false
     var hotkeyRegistrationFailed = false
-    var hotkeyAskFailed = false
-    var hotkeyTextFailed = false
 
     private let environment: AppEnvironment
     private let menuBar = MenuBarController()
 
-    private var assistantPanel: FloatingPanel?
     private var textPanel: FloatingPanel?
-    private var historyPanel: FloatingPanel?
     private var settingsWindow: NSWindow?
     private var onboardingPanel: FloatingPanel?
 
-    private var assistantViewModel: AssistantViewModel?
     private var textViewModel: TextActionMenuViewModel?
-    private var historyViewModel: HistoryViewModel?
     private var successResetTask: Task<Void, Never>?
     private var textActionsTask: Task<Void, Never>?
 
@@ -29,17 +23,6 @@ final class AppCoordinator {
         self.environment = environment
         menuBar.attach(coordinator: self)
 
-        environment.screenAgent.hideChrome = { [weak self] in
-            self?.assistantPanel?.orderOut(nil)
-            self?.historyPanel?.orderOut(nil)
-        }
-        environment.screenAgent.restoreChrome = { [weak self] in
-            self?.assistantPanel?.makeKeyAndOrderFrontActivating()
-        }
-
-        environment.hotkeyManager.onAsk = { [weak self] in
-            self?.toggleAssistant()
-        }
         environment.hotkeyManager.onTextActions = { [weak self] in
             self?.showTextActions()
         }
@@ -60,9 +43,7 @@ final class AppCoordinator {
     func enterIdleMode() {
         if !isPaused {
             environment.hotkeyManager.register()
-            hotkeyAskFailed = environment.hotkeyManager.registrationFailedAsk
-            hotkeyTextFailed = environment.hotkeyManager.registrationFailedText
-            hotkeyRegistrationFailed = hotkeyAskFailed || hotkeyTextFailed
+            hotkeyRegistrationFailed = environment.hotkeyManager.registrationFailedText
             setPetState(.idle, force: true)
         } else {
             setPetState(.sleeping, force: true, hold: true)
@@ -70,82 +51,8 @@ final class AppCoordinator {
         menuBar.reloadMenu()
     }
 
-    func showAssistant(conversation: Conversation? = nil) {
-        guard !isPaused else { return }
-        hideTextPanel()
-        hideHistory()
-
-        if assistantPanel?.isVisible == true, conversation == nil {
-            hideAssistant()
-            return
-        }
-
-        if assistantPanel?.isVisible != true {
-            environment.screenAgent.rememberTargetApp()
-        }
-
-        let viewModel = assistantViewModel ?? AssistantViewModel(
-            aiService: environment.aiService,
-            store: environment.conversationStore,
-            screenAgent: environment.screenAgent
-        )
-        viewModel.onPetState = { [weak self] state in
-            self?.applySessionPetState(state)
-        }
-        if let conversation {
-            viewModel.load(conversation: conversation)
-        }
-        assistantViewModel = viewModel
-
-        let root = AssistantView(
-            viewModel: viewModel,
-            onClose: { [weak self] in self?.hideAssistant() },
-            onOpenHistory: { [weak self] in self?.showHistory() }
-        )
-
-        let size = assistantSize()
-        let origin = panelOriginAttachedToMenuBar(size: size)
-
-        let panel = assistantPanel ?? FloatingPanel(
-            contentRect: NSRect(origin: origin, size: size)
-        )
-        panel.onEscape = { [weak self] in self?.hideAssistant() }
-        panel.onResizeEnd = { size in
-            UserDefaults.standard.set(size.width, forKey: PreferenceKey.assistantWidth)
-            UserDefaults.standard.set(size.height, forKey: PreferenceKey.assistantHeight)
-        }
-        panel.minSize = NSSize(
-            width: PicoTheme.assistantMinWidth,
-            height: PicoTheme.assistantMinHeight
-        )
-        panel.setSwiftUIContent(root)
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
-        panel.makeKeyAndOrderFrontActivating()
-        assistantPanel = panel
-        setPetState(.listening)
-    }
-
-    func toggleAssistant() {
-        if assistantPanel?.isVisible == true {
-            hideAssistant()
-        } else {
-            showAssistant()
-        }
-    }
-
-    func hideAssistant() {
-        // Only cancel in-flight generation — keep multi-turn AI session across panel closes.
-        if assistantViewModel?.isSending == true {
-            assistantViewModel?.cancel()
-        }
-        assistantPanel?.orderOut(nil)
-        setPetState(.idle, force: true)
-    }
-
     func showTextActions() {
         guard !isPaused else { return }
-        hideAssistant()
-        hideHistory()
 
         // Abandon any prior text-actions session so clipboard is restored.
         textActionsTask?.cancel()
@@ -178,11 +85,12 @@ final class AppCoordinator {
 
             let root = TextActionMenu(
                 viewModel: viewModel,
-                onClose: { [weak self] in self?.hideTextPanel() }
+                onClose: { [weak self] in self?.hideTextPanel() },
+                onPreferredSize: { [weak self] size in self?.resizeTextPanel(to: size) }
             )
 
             let panel = self.textPanel ?? FloatingPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 300, height: 280),
+                contentRect: NSRect(x: 0, y: 0, width: 320, height: 340),
                 styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView]
             )
             panel.onEscape = { [weak self] in
@@ -207,47 +115,9 @@ final class AppCoordinator {
         setPetState(.idle, force: true)
     }
 
-    func showHistory() {
-        let viewModel = historyViewModel ?? HistoryViewModel(store: environment.conversationStore)
-        viewModel.reload()
-        historyViewModel = viewModel
-
-        let root = HistoryView(
-            viewModel: viewModel,
-            onSelect: { [weak self] conversation in
-                self?.hideHistory()
-                self?.showAssistant(conversation: conversation)
-            },
-            onClose: { [weak self] in self?.hideHistory() }
-        )
-
-        let panel = historyPanel ?? FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 420)
-        )
-        panel.onEscape = { [weak self] in self?.hideHistory() }
-        panel.setSwiftUIContent(root)
-        let size = NSSize(width: 320, height: 420)
-        let origin: CGPoint
-        if let assistantFrame = assistantPanel?.frame, assistantPanel?.isVisible == true {
-            let screen = assistantPanel?.screen ?? ScreenManager.primaryScreen
-            var x = assistantFrame.minX - size.width - PicoTheme.panelGap
-            if x < screen.visibleFrame.minX + PicoTheme.screenMargin {
-                x = assistantFrame.maxX + PicoTheme.panelGap
-            }
-            origin = CGPoint(
-                x: x,
-                y: max(screen.visibleFrame.minY + PicoTheme.screenMargin, assistantFrame.maxY - size.height)
-            )
-        } else {
-            origin = panelOriginAttachedToMenuBar(size: size)
-        }
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
-        panel.makeKeyAndOrderFrontActivating()
-        historyPanel = panel
-    }
-
-    func hideHistory() {
-        historyPanel?.orderOut(nil)
+    func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: AboutInfo.panelOptions())
     }
 
     func showSettings() {
@@ -291,19 +161,12 @@ final class AppCoordinator {
         UserDefaults.standard.set(isPaused, forKey: PreferenceKey.isPaused)
         if isPaused {
             environment.hotkeyManager.unregister()
-            hideAssistant()
             hideTextPanel()
-            hideHistory()
             setPetState(.sleeping, force: true, hold: true)
         } else {
             enterIdleMode()
         }
         menuBar.reloadMenu()
-    }
-
-    func clearHistory() {
-        try? environment.conversationStore.clearAll()
-        historyViewModel?.reload()
     }
 
     func quit() {
@@ -337,39 +200,24 @@ final class AppCoordinator {
         menuBar.setMascot(state: petState, paused: isPaused)
     }
 
-    private func assistantSize() -> CGSize {
-        let defaults = UserDefaults.standard
-        let width = defaults.object(forKey: PreferenceKey.assistantWidth) as? Double
-            ?? PicoTheme.assistantDefaultWidth
-        let height = defaults.object(forKey: PreferenceKey.assistantHeight) as? Double
-            ?? PicoTheme.assistantDefaultHeight
-        return CGSize(width: width, height: height)
-    }
-
-    /// Ask and History open under the menu-bar mascot instead of a desktop overlay.
-    private func panelOriginAttachedToMenuBar(size: CGSize) -> CGPoint {
-        let fallbackScreen = ScreenManager.screenContainingFrontmostApp()
-        guard let anchor = menuBar.anchorScreenRect() else {
-            let visible = fallbackScreen.visibleFrame
-            return MenuBarPanelPlacement.origin(
-                anchor: CGRect(x: visible.midX, y: visible.maxY, width: 0, height: 0),
-                panelSize: size,
-                visibleFrame: visible,
-                gap: PicoTheme.screenMargin
-            )
+    /// Resizes the Text Actions panel for the current phase, keeping its top edge in place.
+    private func resizeTextPanel(to size: CGSize) {
+        guard let panel = textPanel else { return }
+        var frame = panel.frame
+        frame.origin.y += frame.height - size.height
+        frame.size = size
+        if let screen = panel.screen {
+            frame.origin = ScreenManager.clampOrigin(frame.origin, size: size, on: screen)
         }
-        let screen = NSScreen.screens.first(where: { $0.frame.intersects(anchor) }) ?? fallbackScreen
-        return MenuBarPanelPlacement.origin(
-            anchor: anchor,
-            panelSize: size,
-            visibleFrame: screen.visibleFrame,
-            gap: PicoTheme.panelGap
-        )
+        panel.setFrame(frame, display: true, animate: true)
     }
 
     private func positionTextPanel(_ panel: FloatingPanel) {
         let screen = ScreenManager.screenContainingFrontmostApp()
-        let size = NSSize(width: 320, height: 300)
+        let size = NSSize(
+            width: TextActionMenu.panelSize(for: textViewModel?.phase ?? .chooseAction).width,
+            height: TextActionMenu.panelSize(for: textViewModel?.phase ?? .chooseAction).height
+        )
         let visible = screen.visibleFrame
         var origin = CGPoint(
             x: visible.midX - size.width / 2,

@@ -15,10 +15,8 @@ final class GlobalHotkeyManagerTests: XCTestCase {
         let manager = GlobalHotkeyManager()
         manager.register()
         // Flags reflect OS registration result — just ensure they're consistent after re-register.
-        let askFailed = manager.registrationFailedAsk
         let textFailed = manager.registrationFailedText
         manager.register()
-        XCTAssertEqual(manager.registrationFailedAsk, askFailed)
         XCTAssertEqual(manager.registrationFailedText, textFailed)
         manager.unregister()
     }

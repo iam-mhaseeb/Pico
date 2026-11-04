@@ -69,7 +69,7 @@ final class TextProcessor {
 
         do {
             var changed = false
-            for _ in 0..<12 {
+            for _ in 0..<25 {
                 try await Task.sleep(nanoseconds: 40_000_000)
                 if clipboard.changeCount != changeBefore {
                     changed = true
@@ -114,27 +114,29 @@ final class TextProcessor {
 
     func transform(action: TextAction, text: String) async throws -> String {
         transformTask?.cancel()
+        let service = aiService
         let task = Task {
-            try await aiService.perform(action: action, on: text)
+            try await service.perform(action: action, on: text)
         }
         transformTask = task
+        // Only clear our own task; a newer transform may have replaced it while we awaited.
+        defer { if transformTask == task { transformTask = nil } }
         do {
-            let result = try await task.value
-            transformTask = nil
-            return result
+            return try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
         } catch is CancellationError {
-            transformTask = nil
             throw AIError.cancelled
-        } catch {
-            transformTask = nil
-            throw error
         }
     }
 
     func cancelTransform() {
+        // Cancelling the task reaches the provider's generate() via its cancellation handler,
+        // so in-flight Ask streams are left alone.
         transformTask?.cancel()
         transformTask = nil
-        aiService.cancelAsk(conversationID: nil)
     }
 
     func insert(
@@ -164,21 +166,19 @@ final class TextProcessor {
 
     private func pasteViaClipboard(_ result: String, restoring snapshot: PasteboardSnapshot?) async throws {
         let localSnapshot = snapshot ?? clipboard.snapshot()
+        // Restore even if the wait below is cancelled.
+        defer { clipboard.restore(localSnapshot) }
         clipboard.writeString(result)
         let changeBeforePaste = clipboard.changeCount
         keyEvents.paste()
 
         // Give the target app time to read the pasteboard before restore.
-        var settled = false
-        for _ in 0..<15 {
+        // changeCount may not move on paste, so always wait a minimum before restoring.
+        for step in 0..<15 {
             try await Task.sleep(nanoseconds: 40_000_000)
-            // Prefer waiting a bit after paste event; changeCount may not move on paste.
-            settled = true
-            if clipboard.changeCount != changeBeforePaste {
+            if step >= 3, clipboard.changeCount != changeBeforePaste {
                 break
             }
         }
-        _ = settled
-        clipboard.restore(localSnapshot)
     }
 }

@@ -9,18 +9,29 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Pico runs from the menu bar. The mascot is the menu bar face and still reacts during Ask and Text Actions
-- Ask and History open under the menu bar icon
+- **Pico is now a Text Actions-only, on-device writing helper** (a Grammarly-style alternative). Select text, press `⌥ ⇧ Space`, preview, insert
+- Preview highlights the words that changed
+- Long selections (up to 12,000 characters) are processed in paragraph-sized chunks to fit the on-device model
+- SwiftUI settings and onboarding trimmed to the one remaining permission (Accessibility)
+- `Pico.xcodeproj` is generated from `project.yml` and no longer tracked
+- Hardened Runtime enabled; unsigned Release build workflow added
+
+- About Pico item in the menu bar menu (author, email, website)
 
 ### Removed
 
-- Desktop overlay
-- Mascot extras: drag, pet, feed, shoo, toys, Ghost Mode, edge snap, wander, care stats, outfits, speech, and pet tips
+- Ask Pico chat, conversation history (and the SwiftData store), the `⌥ Space` shortcut
+- Screen help: screen capture, OCR, UI clicking/typing/key presses, and the Screen Recording permission
+- Desktop overlay and mascot extras from earlier builds
+- Unused code
 
-### Added
+### Fixed
 
-- Open-source project docs: LICENSE (MIT), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, PRIVACY, issue/PR templates
-- Screen prompts that ask Pico to read on-screen instructions trigger Look
+- Race conditions in on-device generation and Text Actions cancellation
+- Clipboard capture waits longer for slow apps; the clipboard is restored even when a paste is cancelled
+- Multi-monitor coordinate conversion for selection rects
+- Launch-at-login preference stores the real system status
+- Generated text can no longer be treated as instructions by the model
 
 ## [1.0.0] - 2026-08
 

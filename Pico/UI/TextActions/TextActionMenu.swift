@@ -3,6 +3,18 @@ import SwiftUI
 struct TextActionMenu: View {
     @Bindable var viewModel: TextActionMenuViewModel
     var onClose: () -> Void
+    /// Called when the panel should resize for a new phase (e.g. the larger preview).
+    var onPreferredSize: (CGSize) -> Void = { _ in }
+
+    /// Panel size for each phase, including the shared panel chrome.
+    static func panelSize(for phase: TextActionMenuViewModel.Phase) -> CGSize {
+        switch phase {
+        case .chooseAction: return CGSize(width: 320, height: 340)
+        case .processing: return CGSize(width: 320, height: 220)
+        case .preview: return CGSize(width: 400, height: 500)
+        case .permissionRequired, .emptySelection, .error: return CGSize(width: 340, height: 280)
+        }
+    }
 
     var body: some View {
         PicoPanel(
@@ -55,13 +67,7 @@ struct TextActionMenu: View {
                 case .error(let message):
                     FriendlyErrorView(
                         message: message,
-                        onRetry: {
-                            if let action = viewModel.selectedAction {
-                                Task { await viewModel.run(action) }
-                            } else {
-                                Task { await viewModel.prepare() }
-                            }
-                        },
+                        onRetry: retryAction,
                         onDismiss: {
                             viewModel.cancel()
                             onClose()
@@ -72,10 +78,18 @@ struct TextActionMenu: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .onChange(of: viewModel.phase) { _, phase in
+            onPreferredSize(Self.panelSize(for: phase))
+        }
         .onExitCommand {
             viewModel.cancel()
             onClose()
         }
+    }
+
+    private var retryAction: (() -> Void)? {
+        guard let action = viewModel.selectedAction else { return nil }
+        return { Task { await viewModel.run(action) } }
     }
 
     private var subtitle: String {

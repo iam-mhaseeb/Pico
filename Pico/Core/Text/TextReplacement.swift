@@ -18,8 +18,3 @@ enum TextReplacementError: LocalizedError, Sendable {
         }
     }
 }
-
-struct TextReplacement: Sendable {
-    let originalText: String
-    let strategy: TextReplacementStrategy
-}

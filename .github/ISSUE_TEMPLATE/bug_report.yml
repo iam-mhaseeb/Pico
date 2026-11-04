@@ -56,11 +56,9 @@ body:
     attributes:
       label: Area
       options:
-        - Ask Pico
-        - Look / screen actions
         - Text Actions
         - Menu bar mascot
-        - History / Settings
+        - Settings
         - Hotkeys / permissions
         - Build / CI
         - Other
