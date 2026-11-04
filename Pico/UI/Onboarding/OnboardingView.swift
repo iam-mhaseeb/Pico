@@ -101,7 +101,7 @@ struct OnboardingView: View {
             PetFaceView(state: .success, size: 72)
             Text("Hi, I’m Pico")
                 .font(.title.weight(.semibold))
-            Text("Your private, on-device writing helper.")
+            Text("Your pencil-shaped, on-device writing helper.")
                 .foregroundStyle(.secondary)
         }
     }

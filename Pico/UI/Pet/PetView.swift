@@ -42,144 +42,218 @@ struct PetFaceView: View {
         .rotationEffect(metrics.earTilt / 8)
     }
 
+    /// Pico the pencil. The drawing is laid out in the unit square, tilted slightly, and every
+    /// expression (eyes, cheeks, mouth) lives on the barrel so it stays readable at 18pt.
     private func drawPet(
         context: GraphicsContext,
         in rect: CGRect,
         metrics: PetAnimationMetrics,
         state: PetState
     ) {
-        let unit = rect.width / PicoTheme.petSize
-        let body = Ellipse().path(in: rect.insetBy(dx: rect.width * 0.12, dy: rect.height * 0.14))
-        context.fill(body, with: .color(PicoTheme.petBody))
-        context.stroke(body, with: .color(PicoTheme.petBodyShadow.opacity(0.45)), lineWidth: 1.5 * unit)
+        let w = rect.width
+        let h = rect.height
+        let mx = rect.midX
+        let unit = w / PicoTheme.petSize
+        let line = max(unit, 0.6)
 
-        let leftEar = earPath(in: rect, left: true)
-        let rightEar = earPath(in: rect, left: false)
-        context.fill(leftEar, with: .color(PicoTheme.petBody))
-        context.fill(rightEar, with: .color(PicoTheme.petBody))
+        // Pencil body, tilted and slightly shrunk so the tilt never clips the canvas.
+        var pencil = context
+        pencil.translateBy(x: rect.midX, y: rect.midY)
+        pencil.rotate(by: .degrees(-15))
+        pencil.scaleBy(x: 0.9, y: 0.9)
+        pencil.translateBy(x: -rect.midX, y: -rect.midY)
 
-        let eyeY = rect.midY - rect.height * 0.05
+        // Eraser, then ferrule, barrel, wood and graphite.
+        let eraser = Path(
+            roundedRect: CGRect(x: mx - 0.23 * w, y: 0.05 * h, width: 0.46 * w, height: 0.14 * h),
+            cornerRadius: 0.06 * w
+        )
+        pencil.fill(eraser, with: .color(PicoTheme.pencilEraser))
+
+        let barrelRect = CGRect(x: mx - 0.25 * w, y: 0.24 * h, width: 0.5 * w, height: 0.48 * h)
+        let barrel = Path(roundedRect: barrelRect, cornerRadius: 0.04 * w)
+        pencil.fill(barrel, with: .color(PicoTheme.petBody))
+        pencil.fill(
+            Path(CGRect(x: mx + 0.10 * w, y: barrelRect.minY, width: 0.15 * w, height: barrelRect.height)),
+            with: .color(PicoTheme.petBodyShadow.opacity(0.35))
+        )
+        pencil.stroke(barrel, with: .color(PicoTheme.petBodyShadow.opacity(0.6)), lineWidth: line)
+
+        let ferruleRect = CGRect(x: mx - 0.25 * w, y: 0.17 * h, width: 0.5 * w, height: 0.09 * h)
+        pencil.fill(Path(ferruleRect), with: .color(PicoTheme.pencilFerrule))
+        for y in [0.195, 0.225] {
+            var band = Path()
+            band.move(to: CGPoint(x: ferruleRect.minX, y: y * h))
+            band.addLine(to: CGPoint(x: ferruleRect.maxX, y: y * h))
+            pencil.stroke(band, with: .color(PicoTheme.petBodyShadow.opacity(0.45)), lineWidth: line * 0.7)
+        }
+
+        var wood = Path()
+        wood.move(to: CGPoint(x: mx - 0.25 * w, y: 0.72 * h))
+        wood.addLine(to: CGPoint(x: mx + 0.25 * w, y: 0.72 * h))
+        wood.addLine(to: CGPoint(x: mx, y: 0.93 * h))
+        wood.closeSubpath()
+        pencil.fill(wood, with: .color(PicoTheme.pencilWood))
+
+        var graphite = Path()
+        graphite.move(to: CGPoint(x: mx - 0.09 * w, y: 0.855 * h))
+        graphite.addLine(to: CGPoint(x: mx + 0.09 * w, y: 0.855 * h))
+        graphite.addLine(to: CGPoint(x: mx, y: 0.93 * h))
+        graphite.closeSubpath()
+        pencil.fill(graphite, with: .color(PicoTheme.pencilGraphite))
+
+        // Eyes
+        let eyeCenterY = 0.42 * h
         let eyeHeightFactor: CGFloat = {
             switch state {
-            case .sleeping: return 0.04
-            case .sad: return 0.09
-            default: return 0.13
+            case .sleeping: return 0.03
+            case .sad: return 0.08
+            default: return 0.12
             }
         }()
-        let eyeSize = CGSize(
-            width: rect.width * 0.11,
-            height: rect.height * eyeHeightFactor * max(metrics.blinkOpacity, 0.04)
-        )
-        let leftEye = Ellipse().path(
-            in: CGRect(
-                x: rect.midX - rect.width * 0.18,
-                y: eyeY - eyeSize.height / 2,
-                width: eyeSize.width,
-                height: max(eyeSize.height, 0.35 * unit)
-            )
-        )
-        let rightEye = Ellipse().path(
-            in: CGRect(
-                x: rect.midX + rect.width * 0.07,
-                y: eyeY - eyeSize.height / 2,
-                width: eyeSize.width,
-                height: max(eyeSize.height, 0.35 * unit)
-            )
-        )
-        context.fill(leftEye, with: .color(PicoTheme.petEye))
-        context.fill(rightEye, with: .color(PicoTheme.petEye))
+        let eyeWidth = max(w * 0.075, 1.4)
+        let eyeHeight = max(h * eyeHeightFactor * max(metrics.blinkOpacity, 0.04), 0.4)
+        for offset in [-0.10, 0.10] {
+            let eye = Ellipse().path(in: CGRect(
+                x: mx + offset * w - eyeWidth / 2,
+                y: eyeCenterY - eyeHeight / 2,
+                width: eyeWidth,
+                height: eyeHeight
+            ))
+            pencil.fill(eye, with: .color(PicoTheme.petEye))
+        }
 
+        // Cheeks
         let cheekOpacity: Double = {
             switch state {
-            case .love, .celebrating: return 0.85
-            case .sad, .sleeping: return 0.25
-            default: return 0.55
+            case .love, .celebrating: return 0.9
+            case .sad, .sleeping: return 0.3
+            default: return 0.6
             }
         }()
-        let cheekSize = CGSize(width: rect.width * 0.12, height: rect.height * 0.08)
-        let cheekColor = Color(red: 1.0, green: 0.55, blue: 0.55).opacity(cheekOpacity)
-        context.fill(
-            Ellipse().path(in: CGRect(x: rect.midX - rect.width * 0.28, y: rect.midY + rect.height * 0.05, width: cheekSize.width, height: cheekSize.height)),
-            with: .color(cheekColor)
-        )
-        context.fill(
-            Ellipse().path(in: CGRect(x: rect.midX + rect.width * 0.16, y: rect.midY + rect.height * 0.05, width: cheekSize.width, height: cheekSize.height)),
-            with: .color(cheekColor)
-        )
+        let cheekColor = Color(red: 1.0, green: 0.50, blue: 0.52).opacity(cheekOpacity)
+        for offset in [-0.17, 0.17] {
+            pencil.fill(
+                Ellipse().path(in: CGRect(
+                    x: mx + offset * w - 0.045 * w,
+                    y: 0.50 * h,
+                    width: 0.09 * w,
+                    height: 0.055 * h
+                )),
+                with: .color(cheekColor)
+            )
+        }
 
+        // Mouth
         var mouth = Path()
-        let mouthY = rect.midY + rect.height * 0.16
+        let mouthY = 0.57 * h
+        let mouthHalf = max(w * 0.07, 1.4)
         switch state {
         case .error, .sad:
             mouth.addArc(
-                center: CGPoint(x: rect.midX, y: mouthY + 4 * unit),
-                radius: rect.width * 0.08,
+                center: CGPoint(x: mx, y: mouthY + mouthHalf * 0.9),
+                radius: mouthHalf,
                 startAngle: .degrees(200),
                 endAngle: .degrees(340),
                 clockwise: true
             )
         case .success, .listening, .love, .celebrating:
+            let big = state == .celebrating || state == .love
             mouth.addArc(
-                center: CGPoint(x: rect.midX, y: mouthY - 2 * unit),
-                radius: rect.width * (state == .celebrating || state == .love ? 0.11 : 0.09),
+                center: CGPoint(x: mx, y: mouthY - mouthHalf * 0.4),
+                radius: mouthHalf * (big ? 1.35 : 1.1),
                 startAngle: .degrees(20),
                 endAngle: .degrees(160),
                 clockwise: false
             )
         case .thinking, .working, .curious:
-            let dot = 4 * unit
-            mouth.addEllipse(in: CGRect(x: rect.midX - dot / 2, y: mouthY, width: dot, height: dot))
+            let dot = max(3 * unit, 1.2)
+            mouth.addEllipse(in: CGRect(x: mx - dot / 2, y: mouthY, width: dot, height: dot))
         case .sleeping:
-            mouth.move(to: CGPoint(x: rect.midX - 4 * unit, y: mouthY + unit))
-            mouth.addLine(to: CGPoint(x: rect.midX + 4 * unit, y: mouthY + unit))
+            mouth.move(to: CGPoint(x: mx - mouthHalf * 0.6, y: mouthY + unit))
+            mouth.addLine(to: CGPoint(x: mx + mouthHalf * 0.6, y: mouthY + unit))
         case .idle:
-            mouth.move(to: CGPoint(x: rect.midX - 6 * unit, y: mouthY))
+            mouth.move(to: CGPoint(x: mx - mouthHalf, y: mouthY))
             mouth.addQuadCurve(
-                to: CGPoint(x: rect.midX + 6 * unit, y: mouthY),
-                control: CGPoint(x: rect.midX, y: mouthY + 4 * unit)
+                to: CGPoint(x: mx + mouthHalf, y: mouthY),
+                control: CGPoint(x: mx, y: mouthY + mouthHalf * 0.9)
             )
         }
-        context.stroke(mouth, with: .color(PicoTheme.petEye), lineWidth: 1.8 * unit)
+        pencil.stroke(mouth, with: .color(PicoTheme.petEye), lineWidth: max(1.6 * unit, 0.8))
 
+        // Writing: a little scribble trails the pencil while it works.
         if state == .thinking || state == .working {
-            let dotY = rect.minY + rect.height * 0.08
-            let dot = 3.5 * unit
-            for index in 0..<3 {
-                let x = rect.midX + CGFloat(index - 1) * 7 * unit - dot / 2
-                context.fill(
-                    Circle().path(in: CGRect(x: x, y: dotY, width: dot, height: dot)),
-                    with: .color(PicoTheme.accent.opacity(state == .working ? 0.55 : 0.8))
+            var scribble = Path()
+            let baseY = 0.965 * h
+            scribble.move(to: CGPoint(x: 0.22 * w, y: baseY))
+            for step in 0..<4 {
+                let x0 = 0.22 * w + CGFloat(step) * 0.14 * w
+                scribble.addQuadCurve(
+                    to: CGPoint(x: x0 + 0.14 * w, y: baseY),
+                    control: CGPoint(x: x0 + 0.07 * w, y: baseY + (step % 2 == 0 ? -0.05 : 0.05) * h)
                 )
             }
+            pencil.stroke(
+                scribble,
+                with: .color(PicoTheme.accent.opacity(state == .working ? 0.6 : 0.9)),
+                style: StrokeStyle(lineWidth: max(1.4 * unit, 0.8), lineCap: .round, lineJoin: .round)
+            )
         }
 
-        if state == .love {
+        // Extras are drawn upright in the free top-right corner.
+        switch state {
+        case .love:
             let heart = heartPath(in: CGRect(
-                x: rect.midX + rect.width * 0.18,
-                y: rect.minY + rect.height * 0.02,
-                width: rect.width * 0.16,
-                height: rect.height * 0.14
+                x: rect.minX + w * 0.70,
+                y: rect.minY + h * 0.02,
+                width: w * 0.22,
+                height: h * 0.2
             ))
             context.fill(heart, with: .color(PicoTheme.accent.opacity(0.9)))
-        }
-
-        if state == .sleeping {
+        case .success, .celebrating:
+            context.fill(
+                sparklePath(center: CGPoint(x: rect.minX + w * 0.82, y: rect.minY + h * 0.17), radius: w * 0.14),
+                with: .color(PicoTheme.accent)
+            )
+            if state == .celebrating {
+                context.fill(
+                    sparklePath(center: CGPoint(x: rect.minX + w * 0.64, y: rect.minY + h * 0.06), radius: w * 0.07),
+                    with: .color(PicoTheme.accent.opacity(0.8))
+                )
+            }
+        case .sad, .error:
+            context.fill(
+                Ellipse().path(in: CGRect(x: rect.minX + w * 0.78, y: rect.minY + h * 0.12, width: w * 0.09, height: h * 0.13)),
+                with: .color(Color(red: 0.45, green: 0.70, blue: 0.95))
+            )
+        case .sleeping:
             context.draw(
-                Text("z").font(.system(size: rect.width * 0.22, weight: .bold)),
-                at: CGPoint(x: rect.midX + rect.width * 0.22, y: rect.minY + rect.height * 0.12),
+                Text("z").font(.system(size: w * 0.22, weight: .bold)),
+                at: CGPoint(x: rect.minX + w * 0.82, y: rect.minY + h * 0.14),
                 anchor: .center
             )
+        case .curious:
+            context.draw(
+                Text("?").font(.system(size: w * 0.24, weight: .bold)).foregroundColor(PicoTheme.accent),
+                at: CGPoint(x: rect.minX + w * 0.82, y: rect.minY + h * 0.14),
+                anchor: .center
+            )
+        default:
+            break
         }
     }
 
-    private func earPath(in rect: CGRect, left: Bool) -> Path {
+    private func sparklePath(center: CGPoint, radius: CGFloat) -> Path {
         var path = Path()
-        let tipX = left ? rect.minX + rect.width * 0.22 : rect.maxX - rect.width * 0.22
-        let baseInnerX = left ? rect.midX - rect.width * 0.08 : rect.midX + rect.width * 0.08
-        let baseOuterX = left ? rect.minX + rect.width * 0.32 : rect.maxX - rect.width * 0.32
-        path.move(to: CGPoint(x: tipX, y: rect.minY + rect.height * 0.05))
-        path.addLine(to: CGPoint(x: baseOuterX, y: rect.minY + rect.height * 0.28))
-        path.addLine(to: CGPoint(x: baseInnerX, y: rect.minY + rect.height * 0.28))
+        let inner = radius * 0.28
+        path.move(to: CGPoint(x: center.x, y: center.y - radius))
+        path.addLine(to: CGPoint(x: center.x + inner, y: center.y - inner))
+        path.addLine(to: CGPoint(x: center.x + radius, y: center.y))
+        path.addLine(to: CGPoint(x: center.x + inner, y: center.y + inner))
+        path.addLine(to: CGPoint(x: center.x, y: center.y + radius))
+        path.addLine(to: CGPoint(x: center.x - inner, y: center.y + inner))
+        path.addLine(to: CGPoint(x: center.x - radius, y: center.y))
+        path.addLine(to: CGPoint(x: center.x - inner, y: center.y - inner))
         path.closeSubpath()
         return path
     }
