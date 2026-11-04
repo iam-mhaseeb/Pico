@@ -12,6 +12,7 @@ enum PicoMenuLayout {
     static func statusItemTitles(isPaused: Bool) -> [String] {
         [
             "Text Actions",
+            "About Pico",
             "Settings…",
             pauseTitle(isPaused: isPaused),
             "Quit Pico"

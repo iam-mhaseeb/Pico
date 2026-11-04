@@ -59,6 +59,7 @@ final class MenuBarController {
         menu.addItem(text)
 
         menu.addItem(.separator())
+        menu.addItem(menuItem("About Pico", action: #selector(about)))
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
         let pauseTitle = PicoMenuLayout.pauseTitle(isPaused: paused)
@@ -74,6 +75,7 @@ final class MenuBarController {
     }
 
     @objc private func textActions() { coordinator?.showTextActions() }
+    @objc private func about() { coordinator?.showAbout() }
     @objc private func settings() { coordinator?.showSettings() }
     @objc private func togglePause() { coordinator?.togglePause() }
     @objc private func quit() { coordinator?.quit() }

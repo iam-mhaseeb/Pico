@@ -16,6 +16,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - `Pico.xcodeproj` is generated from `project.yml` and no longer tracked
 - Hardened Runtime enabled; unsigned Release build workflow added
 
+- About Pico item in the menu bar menu (author, email, website)
+
 ### Removed
 
 - Ask Pico chat, conversation history (and the SwiftData store), the `⌥ Space` shortcut

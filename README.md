@@ -75,6 +75,10 @@ Your text is processed by the on-device model and stays on your Mac. Pico has no
 
 See [PRIVACY.md](PRIVACY.md) for a short privacy summary and [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
+## Author
+
+Created by [Muhammad Haseeb](https://muhammadhaseeb.me) · [hello@muhammadhaseeb.me](mailto:hello@muhammadhaseeb.me)
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow the [Code of Conduct](CODE_OF_CONDUCT.md).

@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import XCTest
 @testable import Pico
@@ -43,6 +44,26 @@ final class PicoMenuLayoutTests: XCTestCase {
         XCTAssertFalse(PicoMenuLayout.statusItemTitles(isPaused: false).contains("History"))
         XCTAssertTrue(PicoMenuLayout.statusItemTitles(isPaused: true).contains("Resume Pico"))
         XCTAssertFalse(PicoMenuLayout.statusItemTitles(isPaused: true).contains("Pause Pico"))
+    }
+
+    func testStatusMenuIncludesAbout() {
+        let titles = PicoMenuLayout.statusItemTitles(isPaused: false)
+        XCTAssertTrue(titles.contains("About Pico"))
+        XCTAssertLessThan(titles.firstIndex(of: "About Pico")!, titles.firstIndex(of: "Settings…")!)
+    }
+
+    func testAboutCreditsIncludeAuthorEmailAndWebsite() {
+        let credits = AboutInfo.credits()
+        XCTAssertTrue(credits.string.contains("Muhammad Haseeb"))
+        XCTAssertTrue(credits.string.contains("hello@muhammadhaseeb.me"))
+        XCTAssertTrue(credits.string.contains("muhammadhaseeb.me"))
+
+        var links: [String] = []
+        credits.enumerateAttribute(.link, in: NSRange(location: 0, length: credits.length)) { value, _, _ in
+            if let url = value as? URL { links.append(url.absoluteString) }
+        }
+        XCTAssertTrue(links.contains("mailto:hello@muhammadhaseeb.me"))
+        XCTAssertTrue(links.contains("https://muhammadhaseeb.me"))
     }
 
     func testStatusMenuOmitsPetGestures() {

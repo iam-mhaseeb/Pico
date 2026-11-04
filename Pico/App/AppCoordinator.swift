@@ -115,6 +115,11 @@ final class AppCoordinator {
         setPetState(.idle, force: true)
     }
 
+    func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: AboutInfo.panelOptions())
+    }
+
     func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
