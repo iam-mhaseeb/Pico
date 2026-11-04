@@ -29,6 +29,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Accessibility prompt now notices when the permission is switched on and says so right away, offers **Restart Pico** (macOS can keep reporting "not trusted" to an already-running app), and warns when Pico is running from a temporary download location (App Translocation), where permissions do not stick
+- Corrected the fallback bundle identifier used by the permission reset
 - Release workflow marks tags with a hyphen (for example `v1.0.0-rc2`) as pre-releases and writes the release notes from `CHANGELOG.md` instead of listing every merged PR
 - Text Actions panel no longer cuts off its message or shows hard, square-looking bottom corners: it sizes itself to its content and uses the window's own shadow
 - Accessibility prompt explains the "switched on but still blocked" case (the permission is tied to the exact app build for unsigned apps) and offers **Reset & Re-enable**, also available in Settings

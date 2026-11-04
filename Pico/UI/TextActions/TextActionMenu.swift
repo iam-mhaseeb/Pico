@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TextActionMenu: View {
     @Bindable var viewModel: TextActionMenuViewModel
+    @State private var accessibilityGranted = false
     var onClose: () -> Void
     /// Called after the phase changes so the host can fit the window to the new content.
     var onPhaseChange: () -> Void = {}
@@ -12,7 +13,7 @@ struct TextActionMenu: View {
         case .chooseAction: return CGSize(width: 320, height: 340)
         case .processing: return CGSize(width: 320, height: 220)
         case .preview: return CGSize(width: 400, height: 500)
-        case .permissionRequired: return CGSize(width: 360, height: 260)
+        case .permissionRequired: return CGSize(width: 420, height: 300)
         case .emptySelection, .error: return CGSize(width: 340, height: 280)
         }
     }
@@ -143,29 +144,60 @@ struct TextActionMenu: View {
 
     private var permissionView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Pico needs Accessibility access to read and replace the text you select. Your text stays on your Mac.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("Already switched on in System Settings? macOS ties the permission to the exact app build, so after an update it can go stale. Choose Reset, then enable Pico again.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack {
-                Button("Open Settings") {
-                    PermissionOpener.requestAccessibilityAccessAndOpenSettings()
-                }
-                .keyboardShortcut(.defaultAction)
-                Button("Reset & Re-enable") {
-                    PermissionOpener.resetAccessibilityPermission()
-                }
-                Button("Close") {
+            if accessibilityGranted {
+                Label("Accessibility is on. Select some text and press ⌥ ⇧ Space again.", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Done") {
                     viewModel.cancel()
                     onClose()
+                }
+                .keyboardShortcut(.defaultAction)
+            } else {
+                Text("Pico needs Accessibility access to read and replace the text you select. Your text stays on your Mac.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if PermissionOpener.runningFromTranslocation {
+                    Text("Pico is running from a temporary location because it was downloaded. In Finder, move Pico.app into your Applications folder, then open it from there.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Already switched on in System Settings? macOS ties the permission to the exact app build, so after an update it can go stale. Choose Reset, enable Pico again, and if this message stays, choose Restart Pico.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Open Settings") {
+                        PermissionOpener.requestAccessibilityAccessAndOpenSettings()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    Button("Reset & Re-enable") {
+                        PermissionOpener.resetAccessibilityPermission()
+                    }
+                    Button("Restart Pico") {
+                        PermissionOpener.relaunch()
+                    }
+                    Button("Close") {
+                        viewModel.cancel()
+                        onClose()
+                    }
                 }
             }
         }
         .padding(PicoTheme.panelPadding)
-        .frame(width: 360)
+        .frame(width: 420)
+        // Watch for the permission being switched on so the user gets immediate feedback.
+        .task {
+            while !Task.isCancelled && !PermissionOpener.accessibilityTrusted {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+            if !Task.isCancelled {
+                accessibilityGranted = true
+                onPhaseChange()
+            }
+        }
     }
 }
