@@ -63,7 +63,9 @@ struct PicoPanel<Trailing: View, Content: View>: View {
                     lineWidth: 1
                 )
         )
-        .shadow(color: Color.black.opacity(0.18), radius: 20, y: 10)
+        // No SwiftUI shadow here: the window is exactly the panel's size, so a shadow drawn
+        // inside it is cut off at the edges (hard, square-looking corners). The floating
+        // window draws its own shadow that follows the rounded shape.
     }
 
     private var header: some View {
