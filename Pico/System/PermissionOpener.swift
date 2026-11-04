@@ -11,6 +11,24 @@ enum PermissionOpener {
         openAccessibilitySettings()
     }
 
+    /// Arguments for `tccutil` that clear this app's stale Accessibility entry.
+    static func accessibilityResetArguments(bundleID: String) -> [String] {
+        ["reset", "Accessibility", bundleID]
+    }
+
+    /// macOS ties the Accessibility permission to the exact app build. An unsigned app gets a new
+    /// identity when it is updated or rebuilt, so the old "on" switch stops applying. Clearing the
+    /// entry and asking again lets the user enable the current build.
+    static func resetAccessibilityPermission() {
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.iamhaseb.Pico"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        process.arguments = accessibilityResetArguments(bundleID: bundleID)
+        try? process.run()
+        process.waitUntilExit()
+        requestAccessibilityAccessAndOpenSettings()
+    }
+
     static func openAccessibilitySettings() {
         let candidates = [
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",

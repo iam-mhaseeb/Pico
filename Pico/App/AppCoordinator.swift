@@ -86,7 +86,7 @@ final class AppCoordinator {
             let root = TextActionMenu(
                 viewModel: viewModel,
                 onClose: { [weak self] in self?.hideTextPanel() },
-                onPreferredSize: { [weak self] size in self?.resizeTextPanel(to: size) }
+                onPhaseChange: { [weak self] in self?.scheduleTextPanelFit() }
             )
 
             let panel = self.textPanel ?? FloatingPanel(
@@ -103,6 +103,7 @@ final class AppCoordinator {
             panel.orderFrontRegardless()
             self.textPanel = panel
             self.repositionTextPanelIfNeeded()
+            self.scheduleTextPanelFit()
         }
     }
 
@@ -200,16 +201,22 @@ final class AppCoordinator {
         menuBar.setMascot(state: petState, paused: isPaused)
     }
 
-    /// Resizes the Text Actions panel for the current phase, keeping its top edge in place.
-    private func resizeTextPanel(to size: CGSize) {
-        guard let panel = textPanel else { return }
-        var frame = panel.frame
-        frame.origin.y += frame.height - size.height
-        frame.size = size
-        if let screen = panel.screen {
-            frame.origin = ScreenManager.clampOrigin(frame.origin, size: size, on: screen)
+    /// Fits the Text Actions window to its content once SwiftUI has laid out the new phase.
+    private func scheduleTextPanelFit() {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 60_000_000)
+            self?.fitTextPanel()
         }
-        panel.setFrame(frame, display: true, animate: true)
+    }
+
+    private func fitTextPanel() {
+        guard let panel = textPanel else { return }
+        panel.fitToContent()
+        if let screen = panel.screen ?? NSScreen.main {
+            var frame = panel.frame
+            frame.origin = ScreenManager.clampOrigin(frame.origin, size: frame.size, on: screen)
+            panel.setFrame(frame, display: true)
+        }
     }
 
     private func positionTextPanel(_ panel: FloatingPanel) {

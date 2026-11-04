@@ -29,6 +29,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Text Actions panel no longer cuts off its message or shows hard, square-looking bottom corners: it sizes itself to its content and uses the window's own shadow
+- Accessibility prompt explains the "switched on but still blocked" case (the permission is tied to the exact app build for unsigned apps) and offers **Reset & Re-enable**, also available in Settings
 - Race conditions in on-device generation and Text Actions cancellation
 - Clipboard capture waits longer for slow apps; the clipboard is restored even when a paste is cancelled
 - Multi-monitor coordinate conversion for selection rects

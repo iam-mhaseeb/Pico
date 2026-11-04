@@ -49,6 +49,12 @@ struct SettingsView: View {
                 Button("Accessibility settings…") {
                     PermissionOpener.requestAccessibilityAccessAndOpenSettings()
                 }
+                Button("Reset Accessibility permission…") {
+                    PermissionOpener.resetAccessibilityPermission()
+                }
+                Text("Use Reset if Pico is switched on in System Settings but still says Accessibility is needed. This happens after an update, because the app is unsigned.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

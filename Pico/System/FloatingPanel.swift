@@ -43,6 +43,19 @@ final class FloatingPanel: NSPanel {
         contentView = hosting
     }
 
+    /// Resizes the window to the SwiftUI content's ideal size, keeping the top edge in place.
+    func fitToContent() {
+        guard let view = contentView else { return }
+        view.layoutSubtreeIfNeeded()
+        let fitting = view.fittingSize
+        guard fitting.width > 40, fitting.height > 40 else { return }
+        var newFrame = frame
+        newFrame.origin.y += newFrame.height - fitting.height
+        newFrame.size = fitting
+        setFrame(newFrame, display: true, animate: false)
+        invalidateShadow()
+    }
+
     func makeKeyAndOrderFrontActivating() {
         guard allowsKeyFocus else {
             orderFrontRegardless()

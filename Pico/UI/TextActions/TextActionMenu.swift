@@ -3,16 +3,17 @@ import SwiftUI
 struct TextActionMenu: View {
     @Bindable var viewModel: TextActionMenuViewModel
     var onClose: () -> Void
-    /// Called when the panel should resize for a new phase (e.g. the larger preview).
-    var onPreferredSize: (CGSize) -> Void = { _ in }
+    /// Called after the phase changes so the host can fit the window to the new content.
+    var onPhaseChange: () -> Void = {}
 
-    /// Panel size for each phase, including the shared panel chrome.
+    /// Rough panel size per phase, used for first placement before the window fits its content.
     static func panelSize(for phase: TextActionMenuViewModel.Phase) -> CGSize {
         switch phase {
         case .chooseAction: return CGSize(width: 320, height: 340)
         case .processing: return CGSize(width: 320, height: 220)
         case .preview: return CGSize(width: 400, height: 500)
-        case .permissionRequired, .emptySelection, .error: return CGSize(width: 340, height: 280)
+        case .permissionRequired: return CGSize(width: 360, height: 260)
+        case .emptySelection, .error: return CGSize(width: 340, height: 280)
         }
     }
 
@@ -78,8 +79,8 @@ struct TextActionMenu: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .onChange(of: viewModel.phase) { _, phase in
-            onPreferredSize(Self.panelSize(for: phase))
+        .onChange(of: viewModel.phase) { _, _ in
+            onPhaseChange()
         }
         .onExitCommand {
             viewModel.cancel()
@@ -142,14 +143,22 @@ struct TextActionMenu: View {
 
     private var permissionView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Pico needs Accessibility access to read and replace selected text. When using local AI, your text stays on your Mac.")
+            Text("Pico needs Accessibility access to read and replace the text you select. Your text stays on your Mac.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Already switched on in System Settings? macOS ties the permission to the exact app build, so after an update it can go stale. Choose Reset, then enable Pico again.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Open Settings") {
                     PermissionOpener.requestAccessibilityAccessAndOpenSettings()
                 }
                 .keyboardShortcut(.defaultAction)
+                Button("Reset & Re-enable") {
+                    PermissionOpener.resetAccessibilityPermission()
+                }
                 Button("Close") {
                     viewModel.cancel()
                     onClose()
@@ -157,6 +166,6 @@ struct TextActionMenu: View {
             }
         }
         .padding(PicoTheme.panelPadding)
-        .frame(width: 320)
+        .frame(width: 360)
     }
 }
