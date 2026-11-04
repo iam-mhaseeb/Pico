@@ -13,7 +13,7 @@ protocol AccessibilityProviding: AnyObject {
 @MainActor
 final class AccessibilityManager: AccessibilityProviding {
     var isTrusted: Bool {
-        AXIsProcessTrusted()
+        PermissionOpener.accessibilityTrusted
     }
 
     @discardableResult
