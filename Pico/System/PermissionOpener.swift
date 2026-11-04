@@ -1,6 +1,5 @@
 import AppKit
 @preconcurrency import ApplicationServices
-import CoreGraphics
 import Foundation
 
 enum PermissionOpener {
@@ -38,24 +37,5 @@ enum PermissionOpener {
                 return
             }
         }
-    }
-
-    static func requestScreenRecordingAccessAndOpenSettings() {
-        _ = CGRequestScreenCaptureAccess()
-        openScreenRecordingSettings()
-    }
-
-    static func openScreenRecordingSettings() {
-        let candidates = [
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture",
-            "x-apple.systempreferences:com.apple.Settings.PrivacySecurity.PrivacyScreenCapture"
-        ]
-        for candidate in candidates {
-            if let url = URL(string: candidate), NSWorkspace.shared.open(url) {
-                return
-            }
-        }
-        openAccessibilitySettings()
     }
 }

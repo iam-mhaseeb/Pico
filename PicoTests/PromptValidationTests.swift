@@ -38,7 +38,9 @@ final class PicoMenuLayoutTests: XCTestCase {
     }
 
     func testStatusTitlesIncludeResumeWhenPaused() {
-        XCTAssertEqual(PicoMenuLayout.statusItemTitles(isPaused: false).first, "Ask Pico")
+        XCTAssertEqual(PicoMenuLayout.statusItemTitles(isPaused: false).first, "Text Actions")
+        XCTAssertFalse(PicoMenuLayout.statusItemTitles(isPaused: false).contains("Ask Pico"))
+        XCTAssertFalse(PicoMenuLayout.statusItemTitles(isPaused: false).contains("History"))
         XCTAssertTrue(PicoMenuLayout.statusItemTitles(isPaused: true).contains("Resume Pico"))
         XCTAssertFalse(PicoMenuLayout.statusItemTitles(isPaused: true).contains("Pause Pico"))
     }
@@ -49,39 +51,6 @@ final class PicoMenuLayoutTests: XCTestCase {
         XCTAssertFalse(titles.contains("Feed Pico"))
         XCTAssertFalse(titles.contains("Shoo Pico"))
         XCTAssertFalse(titles.contains("Drop toy"))
-    }
-}
-
-final class MenuBarPanelPlacementTests: XCTestCase {
-    func testPanelOpensUnderTheMenuBarIcon() {
-        let anchor = CGRect(x: 900, y: 800, width: 24, height: 24)
-        let size = CGSize(width: 380, height: 420)
-        let visible = CGRect(x: 0, y: 0, width: 1440, height: 820)
-        let origin = MenuBarPanelPlacement.origin(
-            anchor: anchor,
-            panelSize: size,
-            visibleFrame: visible,
-            gap: 12
-        )
-        XCTAssertEqual(origin.x, anchor.midX - size.width / 2, accuracy: 0.1)
-        XCTAssertEqual(origin.y, anchor.minY - size.height - 12, accuracy: 0.1)
-        XCTAssertLessThan(origin.y + size.height, anchor.minY)
-    }
-
-    func testPanelStaysInsideTheVisibleScreen() {
-        let anchor = CGRect(x: 1400, y: 860, width: 24, height: 24)
-        let size = CGSize(width: 380, height: 420)
-        let visible = CGRect(x: 0, y: 40, width: 1440, height: 820)
-        let origin = MenuBarPanelPlacement.origin(
-            anchor: anchor,
-            panelSize: size,
-            visibleFrame: visible,
-            gap: 12
-        )
-        XCTAssertGreaterThanOrEqual(origin.x, visible.minX + 4)
-        XCTAssertGreaterThanOrEqual(origin.y, visible.minY + 4)
-        XCTAssertLessThanOrEqual(origin.x + size.width, visible.maxX - 4)
-        XCTAssertLessThanOrEqual(origin.y + size.height, visible.maxY - 4)
     }
 }
 

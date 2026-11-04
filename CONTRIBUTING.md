@@ -19,7 +19,7 @@ Thanks for helping improve Pico. This guide covers how to propose changes.
    open Pico.xcodeproj
    ```
 
-3. Run the **Pico** scheme. Grant Accessibility (and Screen Recording if you exercise Look).
+3. Run the **Pico** scheme. Grant Accessibility.
 4. Run tests before opening a PR:
 
    ```bash

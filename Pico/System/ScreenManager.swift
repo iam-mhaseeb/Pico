@@ -56,18 +56,6 @@ enum ScreenManager {
             ?? primaryScreen
     }
 
-    static func screen(forDisplayID displayID: UInt32) -> NSScreen? {
-        NSScreen.screens.first { screen in
-            let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
-            return screenNumber?.uint32Value == displayID
-        }
-    }
-
-    static func displayID(for screen: NSScreen) -> UInt32 {
-        let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
-        return screenNumber?.uint32Value ?? 0
-    }
-
     static func clampOrigin(_ origin: CGPoint, size: CGSize, on screen: NSScreen) -> CGPoint {
         let visible = screen.visibleFrame
         return CGPoint(

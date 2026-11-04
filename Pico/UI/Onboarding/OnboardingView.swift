@@ -7,7 +7,6 @@ struct OnboardingView: View {
 
     private let steps: [(title: String, shortTitle: String)] = [
         ("Meet", "Meet"),
-        ("Ask", "Ask"),
         ("Text", "Text"),
         ("Menu", "Menu"),
         ("Access", "Access"),
@@ -21,11 +20,10 @@ struct OnboardingView: View {
             Group {
                 switch page {
                 case 0: meetPage
-                case 1: askPage
-                case 2: textPage
-                case 3: menuBarPage
-                case 4: permissionsPage
-                case 5: readyPage
+                case 1: textPage
+                case 2: menuBarPage
+                case 3: permissionsPage
+                case 4: readyPage
                 default: meetPage
                 }
             }
@@ -103,20 +101,7 @@ struct OnboardingView: View {
             PetFaceView(state: .success, size: 72)
             Text("Hi, I’m Pico")
                 .font(.title.weight(.semibold))
-            Text("A little AI buddy for your Mac.")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var askPage: some View {
-        VStack(spacing: 16) {
-            Text("Ask me anything")
-                .font(.title2.weight(.semibold))
-            Text("Press")
-                .foregroundStyle(.secondary)
-            Text("⌥ Space")
-                .font(.largeTitle.monospaced())
-            Text("from anywhere on your Mac.")
+            Text("Your private, on-device writing helper.")
                 .foregroundStyle(.secondary)
         }
     }
@@ -125,10 +110,14 @@ struct OnboardingView: View {
         VStack(spacing: 16) {
             Text("Improve anything you write")
                 .font(.title2.weight(.semibold))
-            Text("Select text and press")
+            Text("Select text in any app and press")
                 .foregroundStyle(.secondary)
             Text("⌥ ⇧ Space")
                 .font(.largeTitle.monospaced())
+            Text("Fix grammar, rewrite, change tone, or shorten — then preview the changes before inserting.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
 
@@ -137,7 +126,7 @@ struct OnboardingView: View {
             PetFaceView(state: .idle, size: 72)
             Text("Pico lives in your menu bar")
                 .font(.title2.weight(.semibold))
-            Text("Click the Pico face to ask, rewrite text, or open history. Pico itself stays in the menu bar.")
+            Text("Click the Pico face to open Text Actions, settings, or pause. Pico stays out of your way.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -145,18 +134,12 @@ struct OnboardingView: View {
 
     private var permissionsPage: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("A couple of permissions")
+            Text("One permission")
                 .font(.title2.weight(.semibold))
-            Text("Accessibility lets Pico improve selected text and click things you ask it to.")
-                .foregroundStyle(.secondary)
-            Text("Screen Recording lets Pico see what’s on your display — only when you ask, and only on this Mac.")
-                .font(.subheadline)
+            Text("Accessibility lets Pico read the text you select and replace it with the version you approve. Your text never leaves this Mac.")
                 .foregroundStyle(.secondary)
             Button("Open Accessibility Settings") {
                 PermissionOpener.requestAccessibilityAccessAndOpenSettings()
-            }
-            Button("Open Screen Recording Settings") {
-                PermissionOpener.requestScreenRecordingAccessAndOpenSettings()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

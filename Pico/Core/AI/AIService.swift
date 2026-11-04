@@ -2,6 +2,9 @@ import Foundation
 
 @MainActor
 final class AIService {
+    /// The on-device model has a small context window, so long selections are processed in pieces.
+    static let maxChunkCharacters = 3_000
+
     private let provider: any AIProvider
 
     init(provider: any AIProvider = MacAIProvider()) {
@@ -15,77 +18,26 @@ final class AIService {
         await provider.availability()
     }
 
-    func ask(
-        prompt: String,
-        conversationID: UUID?,
-        screenContext: String? = nil,
-        toneHint: String? = nil
-    ) -> AsyncThrowingStream<String, Error> {
-        provider.stream(
-            prompt: prompt,
-            sessionID: conversationID,
-            instructions: PromptTemplates.askPersonality,
-            extraContext: screenContext,
-            toneHint: toneHint
-        )
-    }
-
-    func seedHistory(conversationID: UUID, messages: [(role: String, content: String)]) {
-        provider.seedHistory(sessionID: conversationID, messages: messages)
-    }
-
-    func dropSession(conversationID: UUID) {
-        provider.dropSession(sessionID: conversationID)
-    }
-
-    func cancelAsk(conversationID: UUID?) {
-        provider.cancel(sessionID: conversationID)
-    }
-
-    func rewrite(_ text: String) async throws -> String {
-        let pair = PromptTemplates.rewrite(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
-    func fixGrammar(_ text: String) async throws -> String {
-        let pair = PromptTemplates.fixGrammar(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
-    func makeProfessional(_ text: String) async throws -> String {
-        let pair = PromptTemplates.makeProfessional(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
-    func makeCasual(_ text: String) async throws -> String {
-        let pair = PromptTemplates.makeCasual(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
-    func shorten(_ text: String) async throws -> String {
-        let pair = PromptTemplates.shorten(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
-    func improve(_ text: String) async throws -> String {
-        let pair = PromptTemplates.improve(text: text)
-        return try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
-    }
-
     func perform(action: TextAction, on text: String) async throws -> String {
-        switch action {
-        case .rewrite:
-            return try await rewrite(text)
-        case .fixGrammar:
-            return try await fixGrammar(text)
-        case .makeProfessional:
-            return try await makeProfessional(text)
-        case .makeCasual:
-            return try await makeCasual(text)
-        case .makeShorter:
-            return try await shorten(text)
-        case .improve:
-            return try await improve(text)
+        guard text.count <= PromptValidation.maxPromptCharacters else {
+            throw AIError.inputTooLarge
         }
+
+        var output = ""
+        for chunk in TextChunker.split(text, limit: Self.maxChunkCharacters) {
+            try Task.checkCancellation()
+            let core = chunk.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !core.isEmpty else {
+                output += chunk
+                continue
+            }
+            // Keep the original spacing around each piece so paragraphs stay where they were.
+            let leading = String(chunk.prefix(while: \.isWhitespace))
+            let trailing = TextChunker.trailingWhitespace(of: chunk)
+            let pair = PromptTemplates.pair(for: action, text: core)
+            let result = try await provider.generate(prompt: pair.prompt, instructions: pair.instructions)
+            output += leading + result.trimmingCharacters(in: .whitespacesAndNewlines) + trailing
+        }
+        return output
     }
 }

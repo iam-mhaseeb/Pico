@@ -10,14 +10,13 @@
 
 Pico is a privileged macOS accessory. With user consent it may:
 
-- Register **global hotkeys**
-- Use **Accessibility** to read/replace selection and drive UI
-- Use **Screen Recording** when the user asks it to look at the display
-- Synthesize keyboard events for paste / UI automation
+- Register a **global hotkey** (`⌥ ⇧ Space`)
+- Use **Accessibility** to read the selected text and replace it
+- Synthesize ⌘C / ⌘V when an app does not expose its selection (the clipboard is restored afterwards)
 
-App Sandbox is intentionally **off** for these capabilities; the Hardened Runtime is **on**.
+Pico does not capture the screen, click, or type on the user’s behalf, and it makes no network requests. App Sandbox is intentionally **off** for these capabilities; the Hardened Runtime is **on**. Treat that as a security-sensitive design choice when reviewing changes.
 
-On-screen text is treated as untrusted: the model cannot press quit/close/delete-style shortcuts or type into secure fields, and screen tools only turn on when the user asks (and expire after 5 idle minutes). Treat that as a security-sensitive design choice when reviewing changes.
+The selected text is passed to the model as content to edit, with instructions not to follow commands inside it.
 
 ## Reporting a vulnerability
 

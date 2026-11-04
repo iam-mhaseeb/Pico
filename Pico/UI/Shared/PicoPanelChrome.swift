@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shared visual shell for Ask, History, and Text Actions so they feel like one Pico surface.
+/// Shared visual shell for Pico panels so they feel like one surface.
 struct PicoPanel<Trailing: View, Content: View>: View {
     let title: String
     var subtitle: String?

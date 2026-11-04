@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared mascot expressions used by the menu-bar face and Pico panels.
 enum PetState: String, Sendable, Equatable, CaseIterable {
-    // Core Ask / Text Actions loop
+    // Core Text Actions loop
     case idle
     case listening
     case thinking
@@ -46,18 +46,18 @@ enum PetState: String, Sendable, Equatable, CaseIterable {
 
 /// Lightweight transition helper for the menu-bar mascot.
 enum PetStateMachine {
-    /// States Ask Pico / Text Actions may drive.
+    /// States Text Actions may drive.
     /// `.working` is also an ambient mood (focus, a code editor, doodling), so it is not a session lock.
-    /// An active Ask or Text session is guarded separately by `aiSessionActive`.
+    /// An active Text Actions session is guarded separately by `aiSessionActive`.
     static let sessionStates: Set<PetState> = [.listening, .thinking, .success, .error]
 
     /// Whether `from` may move to `to` without an explicit force.
     static func canTransition(from: PetState, to: PetState) -> Bool {
         if from == to { return true }
-        // Session states always win so Ask / Text Actions keep driving the mascot.
+        // Session states always win so Text Actions keep driving the mascot.
         if sessionStates.contains(to) { return true }
         if sessionStates.contains(from), !sessionStates.contains(to), to != .idle {
-            // Don't clobber an active Ask/Text session with ambient gestures.
+            // Don't clobber an active Text Actions session with ambient gestures.
             return from == .success || from == .error
         }
         return true

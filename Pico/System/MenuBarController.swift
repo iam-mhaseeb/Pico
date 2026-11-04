@@ -32,12 +32,6 @@ final class MenuBarController {
         button?.setAccessibilityLabel("Pico, \(shownState.accessibilityDescription)")
     }
 
-    /// Screen coordinates of the menu-bar icon, used to open panels just beneath it.
-    func anchorScreenRect() -> NSRect? {
-        guard let button = statusItem?.button else { return nil }
-        return button.window?.convertToScreen(button.bounds)
-    }
-
     private func renderMascot() {
         let renderer = ImageRenderer(
             content: MenuBarMascotLabel(state: shownState)
@@ -60,15 +54,10 @@ final class MenuBarController {
         menu.autoenablesItems = false
         let paused = coordinator?.isPaused == true
 
-        let ask = menuItem("Ask Pico", action: #selector(ask))
-        ask.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
-        menu.addItem(ask)
-
         let text = menuItem("Text Actions", action: #selector(textActions))
         text.isEnabled = PicoMenuLayout.sessionActionsEnabled(isPaused: paused)
         menu.addItem(text)
 
-        menu.addItem(menuItem("History", action: #selector(history)))
         menu.addItem(.separator())
         menu.addItem(menuItem("Settings…", action: #selector(settings)))
         menu.addItem(.separator())
@@ -84,9 +73,7 @@ final class MenuBarController {
         return item
     }
 
-    @objc private func ask() { coordinator?.showAssistant() }
     @objc private func textActions() { coordinator?.showTextActions() }
-    @objc private func history() { coordinator?.showHistory() }
     @objc private func settings() { coordinator?.showSettings() }
     @objc private func togglePause() { coordinator?.togglePause() }
     @objc private func quit() { coordinator?.quit() }

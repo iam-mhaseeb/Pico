@@ -4,27 +4,27 @@ Pico is designed to keep your data on your Mac.
 
 ## What stays local
 
-- Ask Pico prompts and replies (Apple Foundation Models on-device)
-- Screen captures used for **Look** (processed on-device; the image and OCR text are not saved, but Pico’s reply may restate what was on screen and is saved to history while Keep History is on)
-- Text Actions selections and rewrites
-- Conversation history stored with SwiftData on disk (you can turn **Keep History** off in Settings)
+- The text you select and the suggestions Pico generates (Apple Foundation Models, on-device)
+- Nothing is saved: Pico keeps no history, and the selection is held only while the panel is open
 
-## What Pico does not do (v1)
+## What Pico does not do
 
 - No account or sign-in
 - No cloud API key or Pico backend
 - No analytics or crash-reporting SDK
-- No uploading of prompts, responses, or screen frames
+- No uploading of your text or results
+- No screen capture and no screen recording
 
 ## Permissions
 
 | Permission | Why |
 | --- | --- |
-| Accessibility | Read/replace selected text; click or type when you ask |
-| Screen Recording | Capture the display when you ask Pico to look |
+| Accessibility | Read the selected text and replace it with the version you approve |
 | Launch at Login | Optional; only if you enable it |
 
-macOS will prompt for these. You can revoke them in **System Settings → Privacy & Security**.
+When an app doesn’t expose its selection, Pico briefly uses the clipboard (copy, then paste) and restores your previous clipboard contents afterwards.
+
+macOS will prompt for Accessibility. You can revoke it in **System Settings → Privacy & Security**.
 
 ## Changes
 

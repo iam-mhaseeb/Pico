@@ -43,15 +43,6 @@ protocol AIProvider: Sendable {
     var id: String { get }
     var displayName: String { get }
     func availability() async -> Result<Void, AIError>
-    func stream(
-        prompt: String,
-        sessionID: UUID?,
-        instructions: String?,
-        extraContext: String?,
-        toneHint: String?
-    ) -> AsyncThrowingStream<String, Error>
+    /// One-shot text generation. Cancelling the calling task cancels the generation.
     func generate(prompt: String, instructions: String?) async throws -> String
-    func cancel(sessionID: UUID?)
-    func seedHistory(sessionID: UUID, messages: [(role: String, content: String)])
-    func dropSession(sessionID: UUID)
 }
