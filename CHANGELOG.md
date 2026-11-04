@@ -29,6 +29,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Release workflow marks tags with a hyphen (for example `v1.0.0-rc2`) as pre-releases and writes the release notes from `CHANGELOG.md` instead of listing every merged PR
 - Text Actions panel no longer cuts off its message or shows hard, square-looking bottom corners: it sizes itself to its content and uses the window's own shadow
 - Accessibility prompt explains the "switched on but still blocked" case (the permission is tied to the exact app build for unsigned apps) and offers **Reset & Re-enable**, also available in Settings
 - Race conditions in on-device generation and Text Actions cancellation
