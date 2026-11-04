@@ -1,4 +1,8 @@
-<h1 align="center">✏️ Pico</h1>
+<p align="center">
+  <img src="Pico/Resources/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png" width="128" alt="Pico app icon">
+</p>
+
+<h1 align="center">Pico</h1>
 
 <p align="center">
   A private writing helper that lives in your Mac's menu bar.<br>

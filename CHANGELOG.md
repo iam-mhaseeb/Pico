@@ -10,6 +10,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **Pico is now a Text Actions-only, on-device writing helper** (a Grammarly-style alternative). Select text, press `⌥ ⇧ Space`, preview, insert
+- App icon: Pico now has a launcher icon (the pencil on ruled paper) in every size macOS needs, so it shows in Finder, Spotlight, Login Items and the Accessibility list
 - New mascot: Pico is now a pencil with a face (eraser, ferrule, wooden tip). It writes a little scribble while thinking, sparkles on success, and still reacts in every state
 - Preview highlights the words that changed
 - Long selections (up to 12,000 characters) are processed in paragraph-sized chunks to fit the on-device model

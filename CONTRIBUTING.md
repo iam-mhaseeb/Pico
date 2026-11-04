@@ -27,6 +27,14 @@ Thanks for helping improve Pico. This guide covers how to propose changes.
    xcodebuild -scheme Pico -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
    ```
 
+## App icon
+
+The icon is drawn in `Design/AppIcon.svg`. After editing it, regenerate every size (needs Node and Playwright with Chromium):
+
+```bash
+node Design/generate-icons.cjs
+```
+
 ## Releasing
 
 Maintainers publish a release by pushing a version tag:
