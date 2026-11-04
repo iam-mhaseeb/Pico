@@ -15,7 +15,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Long selections (up to 12,000 characters) are processed in paragraph-sized chunks to fit the on-device model
 - SwiftUI settings and onboarding trimmed to the one remaining permission (Accessibility)
 - `Pico.xcodeproj` is generated from `project.yml` and no longer tracked
-- Hardened Runtime enabled; unsigned Release build workflow added
+- Hardened Runtime enabled; tag-triggered Release workflow publishes an unsigned `Pico.zip` to GitHub Releases, with the version taken from the tag
 
 - About Pico item in the menu bar menu (author, email, website)
 

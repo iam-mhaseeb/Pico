@@ -27,6 +27,17 @@ Thanks for helping improve Pico. This guide covers how to propose changes.
    xcodebuild -scheme Pico -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
    ```
 
+## Releasing
+
+Maintainers publish a release by pushing a version tag:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+The **Release** workflow builds an unsigned `Pico.zip`, stamps the tag into the app’s version, and attaches it to a GitHub release with generated notes. The build is not signed or notarized, so on first launch users right-click the app and choose **Open**.
+
 Always treat `project.yml` as the source of truth for the Xcode project. `Pico.xcodeproj` is generated and git-ignored; run `xcodegen generate` after pulling or after changing targets or sources.
 
 ## Coding guidelines

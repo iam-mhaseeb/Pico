@@ -45,7 +45,7 @@ Pico is a small pencil in the menu bar. Select text in any app, press the shortc
 
 **Requires macOS 26 or later and Apple Intelligence enabled.**
 
-Pico doesn't have a packaged release yet, so for now you build it from source.
+Download `Pico.zip` from the [latest release](https://github.com/iam-mhaseeb/Pico/releases/latest) once one is published, unzip it, and move **Pico** into your Applications folder. The app is unsigned, so on first launch right-click it, choose **Open**, then confirm. Until the first release is out, build it from source.
 
 ### Build from source
 
