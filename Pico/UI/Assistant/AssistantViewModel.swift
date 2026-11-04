@@ -66,6 +66,9 @@ final class AssistantViewModel {
         if let previousID = conversationID, previousID != conversation.id {
             aiService.dropSession(conversationID: previousID)
         }
+        // Screen permission granted in one conversation never carries into another.
+        lookAtScreen = false
+        screenAgent?.resetSession()
         activeConversation = conversation
         conversationID = conversation.id
         conversationTitle = conversation.title
@@ -131,7 +134,7 @@ final class AssistantViewModel {
         screenAccessibilityNeeded = false
 
         let askedForScreen = lookAtScreen || ScreenIntent.requestsScreenHelp(prompt)
-        if askedForScreen || screenAgent?.sessionEnabled == true {
+        if askedForScreen || screenAgent?.isSessionActive == true {
             screenAgent?.beginTurn(enabled: true)
         } else {
             screenAgent?.beginTurn(enabled: false)

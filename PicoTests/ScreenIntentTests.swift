@@ -30,6 +30,19 @@ final class ScreenIntentTests: XCTestCase {
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("   "))
         XCTAssertFalse(ScreenIntent.requestsScreenHelp("Follow the instructions"))
     }
+
+    func testQuestionsAboutActionsDoNotTrigger() {
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("How do I submit a pull request?"))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("What's the difference between tap and click?"))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("Explain how to click a button in SwiftUI"))
+        XCTAssertFalse(ScreenIntent.requestsScreenHelp("Summarize this paragraph"))
+    }
+
+    func testPoliteActionRequestsStillTrigger() {
+        XCTAssertTrue(ScreenIntent.requestsScreenHelp("Can you click Save?"))
+        XCTAssertTrue(ScreenIntent.requestsScreenHelp("Please type hello into the search field"))
+        XCTAssertTrue(ScreenIntent.requestsScreenHelp("Summarize this page"))
+    }
 }
 
 final class ScreenDescriptionTests: XCTestCase {
@@ -99,6 +112,20 @@ final class ScreenKeyPressParserTests: XCTestCase {
         let copy = try ScreenKeyPressParser.parse("command+c")
         XCTAssertEqual(copy.keyCode, ScreenKeyPressParser.keyCode(for: "c"))
         XCTAssertTrue(copy.flags.contains(.maskCommand))
+    }
+
+    func testAgentShortcutAllowlist() throws {
+        func allowed(_ spec: String) throws -> Bool {
+            ScreenKeyPressParser.isAllowedForAgent(try ScreenKeyPressParser.parse(spec))
+        }
+        XCTAssertTrue(try allowed("return"))
+        XCTAssertTrue(try allowed("command+c"))
+        XCTAssertTrue(try allowed("command+shift+z"))
+        XCTAssertFalse(try allowed("command+q"))
+        XCTAssertFalse(try allowed("command+w"))
+        XCTAssertFalse(try allowed("command+delete"))
+        XCTAssertFalse(try allowed("control+c"))
+        XCTAssertFalse(try allowed("option+space"))
     }
 
     func testUnknownKeyFails() {

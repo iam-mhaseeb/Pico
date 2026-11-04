@@ -27,7 +27,7 @@ Thanks for helping improve Pico. This guide covers how to propose changes.
    xcodebuild -scheme Pico -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
    ```
 
-Always treat `project.yml` as the source of truth for the Xcode project. After changing targets or sources, run `xcodegen generate` and commit the updated `Pico.xcodeproj` if it changes.
+Always treat `project.yml` as the source of truth for the Xcode project. `Pico.xcodeproj` is generated and git-ignored; run `xcodegen generate` after pulling or after changing targets or sources.
 
 ## Coding guidelines
 

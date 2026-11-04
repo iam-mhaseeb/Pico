@@ -21,8 +21,4 @@ enum AIAvailability {
             return .failure(.unavailable(.unknown))
         }
     }
-
-    static func friendlyMessage(for error: AIError) -> String {
-        error.localizedDescription
-    }
 }

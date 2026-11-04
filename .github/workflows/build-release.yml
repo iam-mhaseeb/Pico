@@ -1,0 +1,38 @@
+name: Release build
+
+# Builds an unsigned Release app to prove it compiles with the Hardened Runtime on.
+# Signing and notarization need the maintainer's Developer ID credentials and are done locally.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -scheme Pico \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Verify Hardened Runtime flag
+        run: grep -q "ENABLE_HARDENED_RUNTIME = YES" Pico.xcodeproj/project.pbxproj
+      - name: Zip app
+        run: ditto -c -k --keepParent build/Build/Products/Release/Pico.app Pico-unsigned.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pico-unsigned
+          path: Pico-unsigned.zip

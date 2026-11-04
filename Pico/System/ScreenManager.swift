@@ -6,10 +6,11 @@ enum ScreenManager {
         NSScreen.screens.first ?? NSScreen.main!
     }
 
-    /// Global desktop height used to convert CGWindow (top-left) → Cocoa (bottom-left).
+    /// CGWindow and Accessibility coordinates have their origin at the top-left of the primary
+    /// display, while Cocoa's origin is the bottom-left of the primary display. Flipping
+    /// therefore uses the primary display's height, not the union of all screens.
     private static var globalDesktopHeight: CGFloat {
-        let union = NSScreen.screens.reduce(CGRect.null) { $0.union($1.frame) }
-        return union.maxY
+        NSScreen.screens.first?.frame.height ?? 0
     }
 
     static func cocoaRect(fromCGWindowBounds cgBounds: CGRect) -> CGRect {

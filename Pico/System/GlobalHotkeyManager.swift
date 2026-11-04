@@ -47,6 +47,8 @@ final class GlobalHotkeyManager {
             return noErr
         }
 
+        // The handler holds an unretained pointer: AppEnvironment owns this manager for the whole
+        // app lifetime, and unregister() removes the handler before any teardown.
         let selfPointer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
         let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),

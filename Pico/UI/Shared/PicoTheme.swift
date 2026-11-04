@@ -25,6 +25,5 @@ enum PreferenceKey {
     static let keepHistory = "keepHistory"
     static let assistantWidth = "assistantWidth"
     static let assistantHeight = "assistantHeight"
-    static let aiProviderID = "aiProviderID"
     static let isPaused = "isPaused"
 }

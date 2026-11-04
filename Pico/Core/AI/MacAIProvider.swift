@@ -120,7 +120,7 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
             continuation.onTermination = { _ in
                 task.cancel()
                 if let sessionID {
-                    self.clearStreamTask(for: sessionID)
+                    self.clearStreamTask(task, for: sessionID)
                 }
             }
         }
@@ -134,28 +134,37 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
 
         let trimmed = try PromptValidation.validatedPrompt(prompt)
 
-        generateTask?.cancel()
-        let task = Task {
+        let task = Task<String, Error> {
             let session = LanguageModelSession(
                 instructions: instructions ?? PromptTemplates.askPersonality
             )
             let response = try await session.respond(to: trimmed)
             return response.content
         }
+        lock.lock()
+        generateTask?.cancel()
         generateTask = task
+        lock.unlock()
+
+        defer {
+            // Only clear our own task — a newer generate() may already have replaced it.
+            lock.lock()
+            if generateTask == task { generateTask = nil }
+            lock.unlock()
+        }
 
         do {
-            let value = try await task.value
-            generateTask = nil
-            return value
+            // Cancelling the caller (e.g. closing Text Actions) must reach the unstructured task.
+            return try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
         } catch is CancellationError {
-            generateTask = nil
             throw AIError.cancelled
         } catch let error as AIError {
-            generateTask = nil
             throw error
         } catch {
-            generateTask = nil
             throw AIError.generationFailed
         }
     }
@@ -221,9 +230,10 @@ final class MacAIProvider: AIProvider, @unchecked Sendable {
         lock.unlock()
     }
 
-    private func clearStreamTask(for sessionID: UUID) {
+    /// Only removes `task` itself, so finishing an old stream can't drop the entry of a newer one.
+    private func clearStreamTask(_ task: Task<Void, Never>, for sessionID: UUID) {
         lock.lock()
-        streamTasks[sessionID] = nil
+        if streamTasks[sessionID] == task { streamTasks[sessionID] = nil }
         lock.unlock()
     }
 }

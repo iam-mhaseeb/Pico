@@ -24,24 +24,6 @@ final class PromptValidationTests: XCTestCase {
         let exact = String(repeating: "a", count: PromptValidation.maxPromptCharacters)
         XCTAssertEqual(try PromptValidation.validatedPrompt(exact), exact)
     }
-
-    func testHistoryIsPrefixedOnce() {
-        let result = PromptValidation.promptIncludingHistory(
-            history: [("user", "Hi"), ("assistant", "Hello")],
-            prompt: "Again"
-        )
-        XCTAssertTrue(result.contains("Previous conversation:"))
-        XCTAssertTrue(result.contains("user: Hi"))
-        XCTAssertTrue(result.contains("assistant: Hello"))
-        XCTAssertTrue(result.contains("User:\nAgain"))
-    }
-
-    func testNilHistoryReturnsPrompt() {
-        XCTAssertEqual(
-            PromptValidation.promptIncludingHistory(history: nil, prompt: "Hi"),
-            "Hi"
-        )
-    }
 }
 
 final class PicoMenuLayoutTests: XCTestCase {

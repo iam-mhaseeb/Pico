@@ -56,6 +56,21 @@ enum ScreenKeyPressParser {
         return ScreenKeyPress(keyCode: keyCode, flags: flags)
     }
 
+    /// Shortcuts the model may press on its own. Anything with ⌃/⌥/fn, or a ⌘ combo outside
+    /// this editing set (quit, close, delete, …), is refused so on-screen text can't trigger it.
+    private static let agentCommandKeys: Set<String> = ["a", "c", "v", "x", "z", "f"]
+
+    static func isAllowedForAgent(_ press: ScreenKeyPress) -> Bool {
+        if press.flags.contains(.maskControl)
+            || press.flags.contains(.maskAlternate)
+            || press.flags.contains(.maskSecondaryFn) {
+            return false
+        }
+        guard press.flags.contains(.maskCommand) else { return true }
+        let allowedCodes = Set(agentCommandKeys.compactMap { keyCode(for: $0) })
+        return allowedCodes.contains(press.keyCode)
+    }
+
     static func keyCode(for name: String) -> UInt16? {
         switch name {
         case "return", "enter":
@@ -87,7 +102,12 @@ enum ScreenKeyPressParser {
         case "pagedown":
             return UInt16(kVK_PageDown)
         default:
-            if name.count == 1, let scalar = name.unicodeScalars.first {
+            guard name.count == 1, let character = name.first else { return nil }
+            // Prefer the active keyboard layout (AZERTY, Dvorak, …); fall back to ANSI codes.
+            if let code = KeyboardLayoutLookup.keyCode(for: character) {
+                return code
+            }
+            if let scalar = name.unicodeScalars.first {
                 return letterOrDigitKeyCode(scalar)
             }
             return nil
@@ -134,5 +154,41 @@ enum ScreenKeyPressParser {
         case "9": return UInt16(kVK_ANSI_9)
         default: return nil
         }
+    }
+}
+
+/// Maps a typed character to the virtual key code that produces it on the current layout.
+enum KeyboardLayoutLookup {
+    static func keyCode(for character: Character) -> UInt16? {
+        let target = String(character).lowercased()
+        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+              let rawData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
+        else { return nil }
+        let data = Unmanaged<CFData>.fromOpaque(rawData).takeUnretainedValue()
+        guard let bytes = CFDataGetBytePtr(data) else { return nil }
+        let layout = UnsafeRawPointer(bytes).assumingMemoryBound(to: UCKeyboardLayout.self)
+        let keyboardType = UInt32(LMGetKbdType())
+
+        for code in 0..<128 {
+            var deadKeys: UInt32 = 0
+            var length = 0
+            var chars = [UniChar](repeating: 0, count: 4)
+            let status = UCKeyTranslate(
+                layout,
+                UInt16(code),
+                UInt16(kUCKeyActionDown),
+                0,
+                keyboardType,
+                OptionBits(kUCKeyTranslateNoDeadKeysBit),
+                &deadKeys,
+                chars.count,
+                &length,
+                &chars
+            )
+            guard status == noErr, length > 0 else { continue }
+            let produced = String(utf16CodeUnits: chars, count: length).lowercased()
+            if produced == target { return UInt16(code) }
+        }
+        return nil
     }
 }

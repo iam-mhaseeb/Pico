@@ -5,7 +5,7 @@ Pico is designed to keep your data on your Mac.
 ## What stays local
 
 - Ask Pico prompts and replies (Apple Foundation Models on-device)
-- Screen captures used for **Look** (processed on-device; not written into conversation history)
+- Screen captures used for **Look** (processed on-device; the image and OCR text are not saved, but Pico’s reply may restate what was on screen and is saved to history while Keep History is on)
 - Text Actions selections and rewrites
 - Conversation history stored with SwiftData on disk (you can turn **Keep History** off in Settings)
 

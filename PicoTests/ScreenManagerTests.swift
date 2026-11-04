@@ -16,9 +16,9 @@ final class ScreenManagerTests: XCTestCase {
         XCTAssertNotEqual(converted.origin.y, cgBounds.origin.y)
         if unionHeight > 0 {
             // When screens exist, union height matches real desktop
-            let realUnion = NSScreen.screens.reduce(CGRect.null) { $0.union($1.frame) }.maxY
-            if realUnion > 0 {
-                XCTAssertEqual(converted.origin.y, realUnion - 200 - 50, accuracy: 0.5)
+            let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+            if primaryHeight > 0 {
+                XCTAssertEqual(converted.origin.y, primaryHeight - 200 - 50, accuracy: 0.5)
             }
         }
     }

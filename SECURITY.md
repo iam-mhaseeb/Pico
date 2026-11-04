@@ -15,14 +15,16 @@ Pico is a privileged macOS accessory. With user consent it may:
 - Use **Screen Recording** when the user asks it to look at the display
 - Synthesize keyboard events for paste / UI automation
 
-App Sandbox is intentionally **off** for these capabilities. Treat that as a security-sensitive design choice when reviewing changes.
+App Sandbox is intentionally **off** for these capabilities; the Hardened Runtime is **on**.
+
+On-screen text is treated as untrusted: the model cannot press quit/close/delete-style shortcuts or type into secure fields, and screen tools only turn on when the user asks (and expire after 5 idle minutes). Treat that as a security-sensitive design choice when reviewing changes.
 
 ## Reporting a vulnerability
 
 Please report security issues **privately**:
 
-1. Email the maintainer via GitHub: [@iam-mhaseeb](https://github.com/iam-mhaseeb) (use GitHub Security Advisories if available on this repository).
-2. Or open a [private security advisory](https://github.com/iam-mhaseeb/Pico/security/advisories/new) if the repo has Advisories enabled.
+1. Open a [private security advisory](https://github.com/iam-mhaseeb/Pico/security/advisories/new) on this repository (preferred).
+2. If that is unavailable, contact the maintainer [@iam-mhaseeb](https://github.com/iam-mhaseeb) through the contact options on their GitHub profile. Do not include details in a public issue.
 
 Include:
 

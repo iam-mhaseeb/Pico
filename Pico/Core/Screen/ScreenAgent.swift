@@ -7,6 +7,8 @@ import Foundation
 @Observable
 final class ScreenAgent {
     static let maxActionsPerTurn = 8
+    /// Screen tools stay available for follow-ups only for a short while after the last use.
+    static let sessionIdleLimit: TimeInterval = 5 * 60
 
     var statusText: String?
     var permissionNeeded = false
@@ -34,6 +36,8 @@ final class ScreenAgent {
     private var lastDisplayBounds = CGRect.zero
     private var lastDescription: String?
     private var actionsThisTurn = 0
+    private var lastScreenActivity = Date.distantPast
+    private let now: () -> Date
     private let picoPID = ProcessInfo.processInfo.processIdentifier
     private let picoBundleID = Bundle.main.bundleIdentifier ?? "com.iamhaseeb.Pico"
 
@@ -43,8 +47,10 @@ final class ScreenAgent {
         ax: any AXSnapshotProviding = AccessibilityTreeSnapshotter(),
         actions: any ScreenActing = ScreenActionExecutor(),
         permission: any ScreenPermissionChecking = SystemScreenPermission(),
-        accessibilityTrusted: @escaping () -> Bool = { AXIsProcessTrusted() }
+        accessibilityTrusted: @escaping () -> Bool = { AXIsProcessTrusted() },
+        now: @escaping () -> Date = { Date() }
     ) {
+        self.now = now
         self.capturer = capturer
         self.ocr = ocr
         self.ax = ax
@@ -61,9 +67,19 @@ final class ScreenAgent {
         targetName = app.localizedName
     }
 
+    /// True while a previous screen request in this conversation is recent enough to allow follow-ups.
+    var isSessionActive: Bool {
+        sessionEnabled && now().timeIntervalSince(lastScreenActivity) < Self.sessionIdleLimit
+    }
+
     func beginTurn(enabled: Bool) {
         turnEnabled = enabled
-        if enabled { sessionEnabled = true }
+        if enabled {
+            sessionEnabled = true
+            lastScreenActivity = now()
+        } else if sessionEnabled, !isSessionActive {
+            sessionEnabled = false
+        }
         actionsThisTurn = 0
         permissionNeeded = false
         accessibilityNeeded = false
@@ -83,6 +99,7 @@ final class ScreenAgent {
 
     func resetSession() {
         sessionEnabled = false
+        lastScreenActivity = .distantPast
         turnEnabled = false
         lastSnapshot = nil
         lastElements = AXElementMap()
@@ -101,10 +118,11 @@ final class ScreenAgent {
     /// Capture OCR + Accessibility of the app the user was in before Ask Pico opened.
     @discardableResult
     func look(focus: String = "") async -> String {
-        guard turnEnabled || sessionEnabled else {
+        guard turnEnabled || isSessionActive else {
             return "Screen help is off. The user didn’t ask to look at or control the screen. Answer from the conversation only."
         }
         turnEnabled = true
+        lastScreenActivity = now()
         isActing = true
         statusText = "Looking at \(resolvedTargetName())…"
 
@@ -187,6 +205,7 @@ final class ScreenAgent {
         }
 
         await prepareForAction()
+        if Task.isCancelled { return await abortCancelledAction() }
         let ok = actions.press(element: element)
         await finishAction()
         if ok {
@@ -214,7 +233,12 @@ final class ScreenAgent {
                     return "I won’t type into a secure text field."
                 }
                 await prepareForAction()
+                if Task.isCancelled { return await abortCancelledAction() }
                 _ = actions.focus(element: element)
+                if actions.focusedElementIsSecure() {
+                    await finishAction()
+                    return "I won’t type into a secure text field."
+                }
                 actions.typeText(clipped)
                 await finishAction()
                 statusText = "Typed into \(node.title)"
@@ -223,6 +247,11 @@ final class ScreenAgent {
         }
 
         await prepareForAction()
+        if Task.isCancelled { return await abortCancelledAction() }
+        if actions.focusedElementIsSecure() {
+            await finishAction()
+            return "I won’t type into a secure text field."
+        }
         actions.typeText(clipped)
         await finishAction()
         statusText = "Typed text"
@@ -231,17 +260,30 @@ final class ScreenAgent {
 
     func pressKey(_ spec: String) async -> String {
         if let error = allowAction() { return error }
+        let parsed: ScreenKeyPress
         do {
-            await prepareForAction()
-            try actions.pressKey(spec)
-            await finishAction()
-            statusText = "Pressed \(spec)"
-            return "Pressed \(spec)."
+            parsed = try ScreenKeyPressParser.parse(spec)
         } catch {
-            isActing = false
-            _ = await restoreChromeIfNeeded()
             return error.localizedDescription
         }
+        guard ScreenKeyPressParser.isAllowedForAgent(parsed) else {
+            return "I can’t press “\(spec)” on my own. Ask the user to press it themselves."
+        }
+        await prepareForAction()
+        if Task.isCancelled { return await abortCancelledAction() }
+        if parsed.flags.contains(.maskCommand) == false, actions.focusedElementIsSecure() {
+            await finishAction()
+            return "I won’t press keys while a secure text field is focused."
+        }
+        do {
+            try actions.pressKey(spec)
+        } catch {
+            await finishAction()
+            return error.localizedDescription
+        }
+        await finishAction()
+        statusText = "Pressed \(spec)"
+        return "Pressed \(spec)."
     }
 
     func clickAt(x: Double, y: Double) async -> String {
@@ -251,6 +293,7 @@ final class ScreenAgent {
             : lastDisplayBounds
         let point = ScreenCoordinates.quartzPoint(normalizedX: x, normalizedY: y, displayBounds: bounds)
         await prepareForAction()
+        if Task.isCancelled { return await abortCancelledAction() }
         actions.clickQuartz(point: point)
         await finishAction()
         statusText = "Clicked on screen"
@@ -259,10 +302,11 @@ final class ScreenAgent {
 
     /// Returns an error message when the action must not run; otherwise nil.
     private func allowAction() -> String? {
-        guard turnEnabled || sessionEnabled else {
+        guard turnEnabled || isSessionActive else {
             return "Screen help is off. The user didn’t ask to control the screen."
         }
         turnEnabled = true
+        lastScreenActivity = now()
         if actionsThisTurn >= Self.maxActionsPerTurn {
             return "Action limit reached for this request."
         }
@@ -290,8 +334,11 @@ final class ScreenAgent {
         isActing = false
     }
 
-    private func restoreChromeIfNeeded() async {
+    private func abortCancelledAction() async -> String {
+        // The user cancelled while we were preparing; undo UI changes without acting.
+        isActing = false
         await restoreChrome?()
+        return "Cancelled before acting."
     }
 
     private func resolveTarget() -> (pid: pid_t?, name: String) {

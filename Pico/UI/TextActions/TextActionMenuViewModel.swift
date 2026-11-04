@@ -55,18 +55,6 @@ final class TextActionMenuViewModel {
         }
     }
 
-    func prepare() async {
-        do {
-            let capture = try await processor.captureSelection()
-            apply(capture: capture)
-        } catch let error as TextProcessor.CaptureError {
-            apply(error: error)
-        } catch {
-            phase = .error(error.localizedDescription)
-            onPetState?(.error)
-        }
-    }
-
     func run(_ action: TextAction) async {
         selectedAction = action
         phase = .processing

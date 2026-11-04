@@ -89,7 +89,7 @@ enum ScreenDescription {
         ACCESSIBILITY (prefer these names/ids when clicking):
         \(ax)
 
-        VISIBLE TEXT OCR — boxes are normalized x,y,w,h from the top-left of the display (0–1). Use click_at only when no named element fits:
+        VISIBLE TEXT OCR — boxes are normalized x,y,w,h from the top-left of the display (0–1). Use clickAt only when no named element fits:
         \(ocr.isEmpty ? "(no text recognized)" : ocr)
         """
         return truncate(body, limit: maxCharacters)

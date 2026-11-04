@@ -24,17 +24,31 @@ final class AppCoordinator {
     private var historyViewModel: HistoryViewModel?
     private var successResetTask: Task<Void, Never>?
     private var textActionsTask: Task<Void, Never>?
+    private var chromeHiddenAssistant = false
+    private var chromeHiddenHistory = false
 
     init(environment: AppEnvironment) {
         self.environment = environment
         menuBar.attach(coordinator: self)
 
         environment.screenAgent.hideChrome = { [weak self] in
-            self?.assistantPanel?.orderOut(nil)
-            self?.historyPanel?.orderOut(nil)
+            guard let self else { return }
+            // Remember what was open so we only bring back what we hid.
+            self.chromeHiddenAssistant = self.assistantPanel?.isVisible == true
+            self.chromeHiddenHistory = self.historyPanel?.isVisible == true
+            self.assistantPanel?.orderOut(nil)
+            self.historyPanel?.orderOut(nil)
         }
         environment.screenAgent.restoreChrome = { [weak self] in
-            self?.assistantPanel?.makeKeyAndOrderFrontActivating()
+            guard let self else { return }
+            if self.chromeHiddenAssistant {
+                self.assistantPanel?.makeKeyAndOrderFrontActivating()
+            }
+            if self.chromeHiddenHistory {
+                self.historyPanel?.orderFrontRegardless()
+            }
+            self.chromeHiddenAssistant = false
+            self.chromeHiddenHistory = false
         }
 
         environment.hotkeyManager.onAsk = { [weak self] in
@@ -139,6 +153,7 @@ final class AppCoordinator {
             assistantViewModel?.cancel()
         }
         assistantPanel?.orderOut(nil)
+        chromeHiddenAssistant = false
         setPetState(.idle, force: true)
     }
 
@@ -247,6 +262,7 @@ final class AppCoordinator {
     }
 
     func hideHistory() {
+        chromeHiddenHistory = false
         historyPanel?.orderOut(nil)
     }
 

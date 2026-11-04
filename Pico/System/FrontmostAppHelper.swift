@@ -12,7 +12,9 @@ enum FrontmostAppHelper {
               let app = NSRunningApplication(processIdentifier: pid),
               !app.isTerminated
         else { return }
-        app.activate(options: [.activateIgnoringOtherApps])
+        // Cooperative activation (the old ignoring-other-apps option is deprecated).
+        NSApp.yieldActivation(to: app)
+        app.activate()
         try? await Task.sleep(nanoseconds: 80_000_000)
     }
 }

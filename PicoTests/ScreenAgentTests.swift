@@ -169,6 +169,44 @@ final class ScreenAgentTests: XCTestCase {
         XCTAssertEqual(actions.clicks.count, ScreenAgent.maxActionsPerTurn)
     }
 
+    func testDangerousShortcutsAreRefused() async {
+        agent.beginTurn(enabled: true)
+        let quit = await agent.pressKey("command+q")
+        XCTAssertTrue(quit.contains("can’t press"))
+        let option = await agent.pressKey("option+tab")
+        XCTAssertTrue(option.contains("can’t press"))
+        XCTAssertTrue(actions.keys.isEmpty)
+
+        let copy = await agent.pressKey("command+c")
+        XCTAssertEqual(copy, "Pressed command+c.")
+        let enter = await agent.pressKey("return")
+        XCTAssertEqual(enter, "Pressed return.")
+        XCTAssertEqual(actions.keys, ["command+c", "return"])
+    }
+
+    func testFollowUpSessionExpiresWhenIdle() async {
+        final class Clock: @unchecked Sendable { var date = Date(timeIntervalSince1970: 1_000) }
+        let clock = Clock()
+        let timed = ScreenAgent(
+            capturer: capturer,
+            ocr: MockOCR(),
+            ax: MockAXSnapshotter(),
+            actions: actions,
+            permission: permission,
+            accessibilityTrusted: { true },
+            now: { clock.date }
+        )
+        timed.beginTurn(enabled: true)
+        XCTAssertTrue(timed.isSessionActive)
+
+        clock.date = clock.date.addingTimeInterval(ScreenAgent.sessionIdleLimit + 1)
+        XCTAssertFalse(timed.isSessionActive)
+        timed.beginTurn(enabled: false)
+        XCTAssertFalse(timed.sessionEnabled)
+        let denied = await timed.clickAt(x: 0.5, y: 0.5)
+        XCTAssertTrue(denied.contains("Screen help is off"))
+    }
+
     func testResetSessionDisablesTools() async {
         agent.beginTurn(enabled: true)
         _ = await agent.look()
